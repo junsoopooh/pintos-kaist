@@ -168,15 +168,15 @@ void do_iret (struct intr_frame *tf);
 //준코
 //실행중인 thtread 재운다. 뒤에 ticks 는 재워서 sleep_list에 들어간 thread가 깨어날 시간
 //ticks = 잘때 tick + 지정할 수면시간 tick
-void thread_sleep(int64_t ticks)
+void thread_sleep(int64_t ticks);
 
 //sleep_list 에서 자던애 깨우기
 //list 순회하면서 스레드 중 wakeup_ticks 가 ticks보다 작으면 일어날 시간이 된거니 깨워줌
-void thread_awake(int64_t ticks)
+void thread_awake(int64_t ticks);
 
 // sleep_list에서 가장 작은 wakeup_ticks 갱신
-void update_next_tick_to_awake(int64_t ticks)
+void update_next_tick_to_awake(int64_t ticks);
 
 //next_tick_to_awake 반환
-int64_t get_next_tick_to_awake(void)
+int64_t get_next_tick_to_awake(void);
 #endif /* threads/thread.h */
