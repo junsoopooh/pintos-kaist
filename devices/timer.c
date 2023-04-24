@@ -103,7 +103,7 @@ void timer_sleep(int64_t ticks)
 	/* busy waiting -> blocked 추가 */
 	if (timer_elapsed(start) < ticks) // timer_elapsed: start로부터 몇tick이 지났는지 반환해주는 함수
 	{
-		thread_sleep(start + ticks);
+	thread_sleep(start + ticks);
 	}
 }
 

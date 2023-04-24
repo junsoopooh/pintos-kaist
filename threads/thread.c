@@ -642,20 +642,18 @@ void thread_wakeup(int64_t ticks)
 {
 
 	struct list_elem *curr = list_begin(&sleep_list);
-
 	while (curr != list_end(&sleep_list))
 	{
 		struct thread *t = list_entry(curr, struct thread, elem);
 		int64_t tmp_ticks = t->wake_up_tick;
 		if (tmp_ticks <= ticks)
 		{
-			// min_thread = list_entry(curr, struct thread, elem);
-			thread_unblock(t);
 			curr = list_remove(&t->elem);
+			thread_unblock(t);
 		}
 		else
 		{
-			curr = list_next(curr);				  /*🤔*/
+			curr = list_next(curr); /*🤔*/
 			update_next_to_wake(t->wake_up_tick); // 지금 탐색 중인 elem의 thread->wake_up_tick
 		}
 	}
