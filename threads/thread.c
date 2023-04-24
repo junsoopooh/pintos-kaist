@@ -51,7 +51,7 @@ static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
 
 //준코 : sleep_list에서 대기중인 스레드들의 wakeup_tick값중 최솟값을 저장
-// static long long next_tick_to_awake;
+static long long next_tick_to_awake;
 
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
@@ -72,14 +72,14 @@ static void schedule (void);
 static tid_t allocate_tid (void);
 
 /* Returns true if T appears to point to a valid thread. */
-#define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC);
+#define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC)
 
 /* Returns the running thread.
  * Read the CPU's stack pointer `rsp', and then round that
  * down to the start of a page.  Since `struct thread' is
  * always at the beginning of a page and the stack pointer is
  * somewhere in the middle, this locates the curent thread. */
-#define running_thread() ((struct thread *) (pg_round_down (rrsp ())));
+#define running_thread() ((struct thread *) (pg_round_down (rrsp ())))
 
 
 // Global descriptor table for the thread_start.
@@ -675,7 +675,7 @@ void thread_sleep(int64_t ticks)
 //list_begin()으로 sleep_list의 첫번째 ELEM 불러줌
 void thread_awake(int64_t ticks)
 {
-	// next_tick_to_awake = INT64_MAX;
+	next_tick_to_awake = INT64_MAX;
 	struct list_elem *e= list_begin(&sleep_list);
 	struct thread *t;
 
@@ -698,7 +698,7 @@ void thread_awake(int64_t ticks)
 //준코
 // next_tick_to_awake가 깨워야 할 스레드중 가장 작은 tick을 갖도록 업데이트한다.
 // next_tick_to_awake 랑 ticks 중 작은값으로 결정하는 방식
-#define MIN(a, b) (((a) < (b)) ? (a) : (b));
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 void update_next_tick_to_awake(int64_t ticks)
 {
