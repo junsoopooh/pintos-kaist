@@ -88,13 +88,29 @@ timer_elapsed (int64_t then) {
 }
 
 /* Suspends execution for approximately TICKS timer ticks. */
-void
-timer_sleep (int64_t ticks) {
+
+//time_elapsed는 현재시간이 start로부터 얼마나 지났는지 알려줌
+//time_sleep의 목적 : start로부터 일정 tick이 지나기 전에는 thread 활성화 X(thread_yield())
+//기존의 코드는 run에 올라갔다가 ready로 돌아오는 작업의 반복 => 대기하면서도 CPU 사용한다 => busy_wating
+// 이걸해결해야한다.
+// 아래는 원래 있던 코드
+// void
+// timer_sleep (int64_t ticks) {
+// 	int64_t start = timer_ticks ();
+
+// 	ASSERT (intr_get_level () == INTR_ON);
+// 	while (timer_elapsed (start) < ticks)
+// 		thread_yield ();
+// }
+
+
+// 준코 : 수정함
+// thread를 원할때까지 비활성화, 다른 쓰레드가 CPU 사용가능
+void timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
 
 	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	thread_sleep(start+ticks); // 스레드가 start에서 얼마나 ticks이 지나야 꺠어날지 설정
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -122,10 +138,19 @@ timer_print_stats (void) {
 }
 
 /* Timer interrupt handler. */
+// 준코
+// 매 tick마다 sleep list에서 깨울 thread 있는지 확인하기, 있으면 꺠우는 함수 호출
+// thread_tick은 코드 제출할때 검사를 위한 함수?
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
+	int64_t next_tick;
+	next_tick = get_next_tick_to_awake();
+	if (ticks >= next_tick)
+	{
+		thread_awake(ticks);
+	}
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

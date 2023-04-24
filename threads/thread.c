@@ -28,6 +28,11 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+//준코 : THREAD_BLOCKED 상태 스레드 관리위한 리스트 자료구조
+static struct list sleep_list
+//준코 : sleep_list에서 대기중인 스레드들의 wakeup_tick값중 최소값 저장
+static int64_t next_tick_to_awake;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -44,6 +49,9 @@ static struct list destruction_req;
 static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
+
+//준코 : sleep_list에서 대기중인 스레드들의 wakeup_tick값중 최솟값을 저장
+static long long next_tick_to_awake;
 
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
@@ -99,6 +107,8 @@ thread_init (void) {
 	/* Reload the temporal gdt for the kernel
 	 * This gdt does not include the user context.
 	 * The kernel will rebuild the gdt with user context, in gdt_init (). */
+
+	 // 스레드 시스템 시작, pintos의 첫번째 스레드 만듬
 	struct desc_ptr gdt_ds = {
 		.size = sizeof (gdt) - 1,
 		.address = (uint64_t) gdt
@@ -109,6 +119,13 @@ thread_init (void) {
 	lock_init (&tid_lock);
 	list_init (&ready_list);
 	list_init (&destruction_req);
+
+	//준코 : init할떄 sleep_list, next_tick_to_awake 초기화
+	//next_tick_to_awake는 비교하면서 최솟값 찾아가니까 초기화할떄 정수 최댓값 넣어줌
+	list_init(&sleep_list);
+	next_tick_to_awake = INT64_MAX;
+
+
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
@@ -122,6 +139,9 @@ thread_init (void) {
 void
 thread_start (void) {
 	/* Create the idle thread. */
+	//스케쥴러 시작하기위해 호출
+	// ready상태 스레드가 없으면 스케쥴 될수있는 이상적인(idle) thread만듬
+	// main()이나 intr_yield_on_return()을 사용하는 인터럽트 가능하게 만듬
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
@@ -138,6 +158,9 @@ thread_start (void) {
 void
 thread_tick (void) {
 	struct thread *t = thread_current ();
+	//timer tick의 timer interrupt 호출
+	// time slice가 만료되어씅ㄹ때, 스케쥴러를 가동
+	// 스레드 통계 가짐
 
 	/* Update statistics. */
 	if (t == idle_thread)
@@ -160,6 +183,8 @@ thread_print_stats (void) {
 	printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
 			idle_ticks, kernel_ticks, user_ticks);
 }
+//스레드가 shutdown일 때 호출, 통계 출력
+
 
 /* Creates a new kernel thread named NAME with the given initial
    PRIORITY, which executes FUNCTION passing AUX as the argument,
@@ -176,6 +201,12 @@ thread_print_stats (void) {
    The code provided sets the new thread's `priority' member to
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
+
+// 인자name으로 스레드 만들고 시작. 만들어진 스레드의 tid 반환 -> 스레드가 인자func 실행 -> 인자*aux는 func의 인자 나타냄
+// 밑에 것은 스레드의 페이지를 할당, 스레드의 멤버 초기화, 스레드 스택 할당
+// 스레드는 blocked state 상태에서 초기화, 반환 직전 unblock됨 => 스레드가 스케쥴 할 수 있도록 하기 위함
+
+// void thread_func (void *aux); : 스레드로 실행되는 함수의 type, 인자*aux는 이 함수의 인자를 나타냄
 tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
@@ -216,6 +247,9 @@ thread_create (const char *name, int priority,
    This function must be called with interrupts turned off.  It
    is usually a better idea to use one of the synchronization
    primitives in synch.h. */
+
+// running 상태의 스레드를 blocked상태로 바꿈. 이 스레드는 호출 없으면 가동안됨
+// 낮은 수준의 동기화라 다른 방식 쓰는것 추천
 void
 thread_block (void) {
 	ASSERT (!intr_context ());
@@ -232,6 +266,8 @@ thread_block (void) {
    be important: if the caller had disabled interrupts itself,
    it may expect that it can atomically unblock a thread and
    update other data. */
+
+// blocked 쓰레드를 READY로
 void
 thread_unblock (struct thread *t) {
 	enum intr_level old_level;
@@ -245,15 +281,17 @@ thread_unblock (struct thread *t) {
 	intr_set_level (old_level);
 }
 
-/* Returns the name of the running thread. */
+// running 상태 스레드의 이름을 반환
+// thread_current () -> name과 같음
 const char *
 thread_name (void) {
 	return thread_current ()->name;
 }
 
-/* Returns the running thread.
-   This is running_thread() plus a couple of sanity checks.
+/* This is running_thread() plus a couple of sanity checks.
    See the big comment at the top of thread.h for details. */
+
+// running 상태 스레드 반환
 struct thread *
 thread_current (void) {
 	struct thread *t = running_thread ();
@@ -269,14 +307,15 @@ thread_current (void) {
 	return t;
 }
 
-/* Returns the running thread's tid. */
+
+// running 상태 스레드의 tid 반환 thread_current()->tid와 같음
 tid_t
 thread_tid (void) {
 	return thread_current ()->tid;
 }
 
-/* Deschedules the current thread and destroys it.  Never
-   returns to the caller. */
+
+// 현재 스레드 나가게함, 비가역적
 void
 thread_exit (void) {
 	ASSERT (!intr_context ());
@@ -294,6 +333,10 @@ thread_exit (void) {
 
 /* Yields the CPU.  The current thread is not put to sleep and
    may be scheduled again immediately at the scheduler's whim. */
+
+// 스케쥴러가 새로운 스레드를 가동할 수 있도록 스케쥴러에 CPU 할당
+// 새로운 스레드가 current 쓰레드로 바귐
+// 그래서 스레드를 잠깐 runnig상태 못벗어나게 만들려고 쓰는건 안됨
 void
 thread_yield (void) {
 	struct thread *curr = thread_current ();
@@ -308,7 +351,7 @@ thread_yield (void) {
 	intr_set_level (old_level);
 }
 
-/* Sets the current thread's priority to NEW_PRIORITY. */
+/* 쓰레드에 새로운 우선순위. */
 void
 thread_set_priority (int new_priority) {
 	thread_current ()->priority = new_priority;
@@ -587,4 +630,84 @@ allocate_tid (void) {
 	lock_release (&tid_lock);
 
 	return tid;
+}
+
+//준코
+// thread_yield()를 뼈대로 만든 함수
+// 비활성화 : ready_list로 안보낸다. 거기가면 busy-waiting 되니까, sleep_list로 보내서 재운다.
+// sleep thread 만들었으니까 다음 깨워야할 스레드 바뀔 가능성 있음.
+// 그래서 update_next_tick_to_awake를 해서 next_tick_to_awake 갱신한것임
+// 원래 do_schedule에서 스레드의 status 바꿔줌.
+// 근데 ready로 바꾸지말고 blocked(sleep)로 바꿔서 재우자.
+void thread_sleep(int64_t ticks)
+{
+	struct thread *curr = thread_current();
+	enum intr_level old_level;
+	ASSERT(!intr_context());
+	old_level = intr_disable();
+
+	curr-> wakeup_tick = ticks;
+
+	if(curr != idle_thread)
+	{
+		list_push_back(&sleep_list, &curr->elem)
+	}
+
+	update_next_tick_to_awake(ticks);
+	do_schedule(THREAD_BLOCKED);
+	intr_set_level(old_level);
+}
+
+//준코
+// thread_awake의 역할 두가지
+// 1. sleep_list 순회하면서 일어날 시간이 된 thread를 깨운다.(각 스레드의 wakeup_tick을 ticks와 비교해서 작으면 꺠움)
+// 2. 스레드가 일어나면 sleep_list가 바뀐다.(일어난애 빠짐) 그래서 next_tick_to_awake가 바뀐다.
+// 현재 ticks에서 아직 자고있는 스레드중에 가장 작은 wakeup_tick가  next_tick_to_awake로 갱신시키는 것.
+
+// next_tick_to_awake 새로 갱신됨. 그래서 thread_awake()를 맨처음에 최댓값으로 초기화해줌
+// elem : 스레드를 불러오기 위한 일종의 인덱스. sleep_list 같은 list구조에 thread 직접 안들어가고 스레드 안 elem가리킴
+// 앞 elem 뒤 elem있다. /include/lib/kernal/lish.h에 나와있음. 
+// HEAD - ELEM1 - ELEM2 - ... - TAIL
+//        (스레드) (스레드)
+// 이런식으로 리스트 안에 ELEM이 있고 ELEM은 스레드에도 소속되어있음
+// HEAD, TAIL은 스레드 안가리킴
+
+//list_begin()으로 sleep_list의 첫번째 ELEM 불러줌
+void thread_awake(int64_t ticks)
+{
+	next_tick_to_awake = INT64_MAX;
+	struct list_elem *e= list_begin(&sleep_list)
+	struct thread *t;
+
+	for (e ; e != list_end(&sleep_list);)
+	{
+		t = list_entry(e, struct thread, elem);
+		if (t->wakeup_tick <= ticks)
+		{
+			e = list_remove(&t->elem);
+			thread_unblock(t);
+		}
+		else
+		{
+			update_next_tick_to_awake(t->wakeup_tick);
+			e = list_next(e);
+		}
+	}
+}
+
+//준코
+// next_tick_to_awake가 깨워야 할 스레드중 가장 작은 tick을 갖도록 업데이트한다.
+// next_tick_to_awake 랑 ticks 중 작은값으로 결정하는 방식
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
+void update_next_tick_to_awake(int64_t ticks)
+{
+	next_tick_to_awake = MIN(next_tick_to_awake, ticks);
+}
+
+//준코
+//next_tick_to_awake 반환
+int64_t get_next_tick_to_awake(void)
+{
+	return next_tick_to_awake;
 }
