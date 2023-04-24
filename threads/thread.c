@@ -63,6 +63,14 @@ static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
 
+/*----------------추가 선언-------------------*/
+#define get_min(a, b)(((a) < (b)) ? (a) : (b))
+static struct list sleep_list; 
+void thread_wakeup(int64_t ticks);
+void thread_sleep(int64_t ticks);
+struct thread *get_next_to_wakeup();
+/*----------------추가 함수 end-------------------*/
+
 /* Returns true if T appears to point to a valid thread. */
 #define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC)
 
@@ -73,11 +81,10 @@ static tid_t allocate_tid (void);
  * somewhere in the middle, this locates the curent thread. */
 #define running_thread() ((struct thread *) (pg_round_down (rrsp ())))
 
-
-// Global descriptor table for the thread_start.
-// Because the gdt will be setup after the thread_init, we should
-// setup temporal gdt first.
-static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
+	// Global descriptor table for the thread_start.
+	// Because the gdt will be setup after the thread_init, we should
+	// setup temporal gdt first.
+	static uint64_t gdt[3] = {0, 0x00af9a000000ffff, 0x00cf92000000ffff};
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -108,6 +115,7 @@ thread_init (void) {
 	/* Init the globla thread context */
 	lock_init (&tid_lock);
 	list_init (&ready_list);
+	list_init(&sleep_list); // 리스트 추가
 	list_init (&destruction_req);
 
 	/* Set up a thread structure for the running thread. */
@@ -588,3 +596,35 @@ allocate_tid (void) {
 
 	return tid;
 }
+
+void thread_sleep(int64_t local_ticks){
+	struct thread *curr = thread_current();
+
+	if(curr != idle_thread){
+		intr_disable();
+		curr -> status = THREAD_BLOCKED;
+		curr -> wake_up_tick = local_ticks;
+		list_push_back(&sleep_list, &curr->elem);
+		schedule();
+	}
+}
+
+void thread_wakeup(int64_t ticks){
+	struct thread *min_thread = get_next_to_wakeup();
+	intr_disable();
+	min_thread->status = THREAD_READY;
+	list_remove(&min_thread->elem);
+	list_push_back(&ready_list, &min_thread->elem);
+}
+
+struct thread* get_next_to_wakeup(){
+	int64_t min = INT64_MAX;
+	struct list_elem *curr = list_front(&sleep_list);
+	
+	while(curr != list_tail(&sleep_list)){
+		int64_t tmp_ticks = list_entry(curr, struct thread, elem)->wake_up_tick;
+		min = get_min(tmp_ticks, min);
+		curr = list_next(curr);	
+	}
+	return list_entry(curr, struct thread, elem); // 가장 작은 ticks을가진 쓰레드를 반환
+ }

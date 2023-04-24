@@ -95,6 +95,9 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
+	/* local tick */
+	int64_t wake_up_tick;
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -141,6 +144,13 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-void do_iret (struct intr_frame *tf);
+/*----------------추가 선언 함수-------------------*/
+void thread_sleep(int64_t ticks);
+static struct list ready_list;
+
+static struct list sleep_list;
+/*----------------추가 선언 함수 end-------------------*/
+
+void do_iret(struct intr_frame *tf);
 
 #endif /* threads/thread.h */
