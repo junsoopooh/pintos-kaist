@@ -63,7 +63,14 @@ list_init (struct list *list) {
 	list->tail.next = NULL;
 }
 
+// thread.c에서 thread_awake 를 정의할때 for문을 생각해보자
+// for 반복문의 종결조건은 e가 list의 tail이라는 것이였음
+// 즉 e는 head도 아니고 tail도 아닌 스레드달린(정확힌 elem이 스레드에속해있는거지만) elem다.
+// e와 list_entry로 스레드(t) 가져온다.
+
+
 /* Returns the beginning of LIST.  */
+// begin 하면 스레드가 없는 head가 아니라 처음인 1번 elem을 가져옴
 struct list_elem *
 list_begin (struct list *list) {
 	ASSERT (list != NULL);
@@ -73,6 +80,8 @@ list_begin (struct list *list) {
 /* Returns the element after ELEM in its list.  If ELEM is the
    last element in its list, returns the list tail.  Results are
    undefined if ELEM is itself a list tail. */
+
+//
 struct list_elem *
 list_next (struct list_elem *elem) {
 	ASSERT (is_head (elem) || is_interior (elem));
@@ -84,6 +93,7 @@ list_next (struct list_elem *elem) {
    list_end() is often used in iterating through a list from
    front to back.  See the big comment at the top of list.h for
    an example. */
+// 
 struct list_elem *
 list_end (struct list *list) {
 	ASSERT (list != NULL);
@@ -237,6 +247,10 @@ struct list_elem *e = list_pop_front (&list);
 ...do something with e...
 }
 */
+
+// 깨운다의 의미 : sleep_list 에서 없애고 read_list에는 올린다는 뜻이다.
+// elem을 list에서 지운다 => prev elem - next elem 이어준다.
+// return은 다음 elem 가리킨다.
 struct list_elem *
 list_remove (struct list_elem *elem) {
 	ASSERT (is_interior (elem));
