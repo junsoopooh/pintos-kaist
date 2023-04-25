@@ -74,6 +74,7 @@ static int64_t min_ticks; /*🤔*/
 bool priority_less(const struct list_elem *a_, const struct list_elem *b_,
 				   void *aux UNUSED);
 void insert_to_ready(struct thread *t);
+bool is_cur_high(void);
 /*----------------추가 함수 end-------------------*/
 
 /* Returns true if T appears to point to a valid thread. */
@@ -86,10 +87,10 @@ void insert_to_ready(struct thread *t);
  * somewhere in the middle, this locates the curent thread. */
 #define running_thread() ((struct thread *)(pg_round_down(rrsp())))
 
-// Global descriptor table for the thread_start.
-// Because the gdt will be setup after the thread_init, we should
-// setup temporal gdt first.
-static uint64_t gdt[3] = {0, 0x00af9a000000ffff, 0x00cf92000000ffff};
+	// Global descriptor table for the thread_start.
+	// Because the gdt will be setup after the thread_init, we should
+	// setup temporal gdt first.
+	static uint64_t gdt[3] = {0, 0x00af9a000000ffff, 0x00cf92000000ffff};
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -257,25 +258,30 @@ void thread_unblock(struct thread *t)
 	/*-------------------------[project 1-2]-------------------------
 	list_push_back(&ready_list, &t->elem);
 	-------------------------[project 1-2]-------------------------*/
-	insert_to_ready(t);
 	t->status = THREAD_READY;
+	insert_to_ready(t);
 	intr_set_level(old_level);
 }
 
 /* 현재 스레드와 priority를 비교하고, ready_list에 추가*/
 void insert_to_ready(struct thread *t)
 {
-	if (t != idle_thread){
-		list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
-	if (!list_empty(&ready_list))
+	if (t != idle_thread)
 	{
-		struct list_elem *max_priority_elem = list_head(&ready_list);
-		int max_priority = list_entry(max_priority_elem, struct thread, elem)->priority;
-		if (max_priority > running_thread()->priority)
+		list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
+		if (!list_empty(&ready_list))
 		{
-			schedule();
+			if (!is_cur_high)
+			{
+				thread_yield();
+			}
 		}
-	}}
+	}
+}
+
+bool is_cur_high(void)
+{
+	(thread_current()->priority >= list_entry(list_head(&ready_list), struct thread, elem)->priority) ? 1 : 0;
 }
 
 /* Returns the name of the running thread. */
