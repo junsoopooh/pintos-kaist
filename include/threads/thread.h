@@ -156,4 +156,12 @@ int thread_get_load_avg(void);
 
 void do_iret(struct intr_frame *tf);
 
+// 준코 : 정의
+void thread_sleep(int64_t);
+void thread_wakeup(int64_t);
+void update_next_to_wake(int64_t local_ticks);
+int64_t get_next_to_wakeup(void);
+void test_max_priority(void);
+bool priority_less(const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
+
 #endif /* threads/thread.h */
