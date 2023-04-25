@@ -90,22 +90,20 @@ timer_elapsed(int64_t then)
 	return timer_ticks() - then;
 }
 
+/*-------------------------[project 1]-------------------------*/
 /* Suspends execution for approximately TICKS timer ticks. */
-void timer_sleep(int64_t ticks)
+void timer_sleep(int64_t local_ticks) /* local_ticks: 재우고 싶은 시간*/
 {
 	int64_t start = timer_ticks();
 
-	ASSERT(intr_get_level() == INTR_ON);
-	/* defaul code */
-	// while (timer_elapsed (start) < ticks)
-	// 	thread_yield ();
+	ASSERT(intr_get_level() == INTR_ON); /* 인터럽트 방지 */
 
-	/* busy waiting -> blocked 추가 */
-	if (timer_elapsed(start) < ticks) // timer_elapsed: start로부터 몇tick이 지났는지 반환해주는 함수
+	if (timer_elapsed(start) < local_ticks) /* 깨울 시간이 안 됐을 경우 */
 	{
-	thread_sleep(start + ticks);
+		thread_sleep(start + local_ticks); 
 	}
 }
+/*-------------------------[project 1]-------------------------*/
 
 /* Suspends execution for approximately MS milliseconds. */
 void timer_msleep(int64_t ms)
@@ -138,10 +136,13 @@ timer_interrupt(struct intr_frame *args UNUSED)
 	ticks++;
 	thread_tick();
 
-	if (get_next_to_wakeup() <= ticks)
+	/*-------------------------[project 1]-------------------------*/
+	/* 깨울 스레드가 있으면 깨우기 */
+	if (get_next_to_wakeup() <= ticks) /* get_next_to_wakeup(): 가장 작은 wakeup_ticks를 가진 스레드를 반환 */
 	{
 		thread_wakeup(ticks);
-	} // 🚨 현재 경과된 틱 수
+	} 
+	  /*-------------------------[project 1]-------------------------*/
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
