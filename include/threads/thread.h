@@ -28,6 +28,15 @@ typedef int tid_t;
 #define PRI_DEFAULT 31 /* Default priority. */
 #define PRI_MAX 63	   /* Highest priority. */
 
+/*----------------추가 선언 함수-------------------*/
+void thread_sleep(int64_t ticks);
+static struct list ready_list;
+
+static struct list sleep_list;
+void update_next_to_wake(int64_t local_ticks);
+int64_t get_next_to_wakeup(void);
+/*----------------추가 선언 함수 end-------------------*/
+
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -144,14 +153,6 @@ int thread_get_nice(void);
 void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
-
-/*----------------추가 선언 함수-------------------*/
-void thread_sleep(int64_t ticks);
-static struct list ready_list;
-
-static struct list sleep_list;
-int64_t get_next_to_wakeup(void);
-/*----------------추가 선언 함수 end-------------------*/
 
 void do_iret(struct intr_frame *tf);
 
