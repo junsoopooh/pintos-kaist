@@ -25,7 +25,7 @@
 #define THREAD_BASIC 0xd42df210
 
 /* List of processes in THREAD_READY state, that is, processes
-   that are ready to run but not actually running. */
+   that are ready to run buready_listt not actually running. */
 static struct list ready_list;
 
 /* Idle thread. */
@@ -71,6 +71,9 @@ void thread_sleep(int64_t ticks);
 int64_t get_next_to_wakeup(void);
 static int64_t min_ticks; /*🤔*/
 
+static bool
+priority_less(const struct list_elem *a_, const struct list_elem *b_,
+			  void *aux UNUSED);
 /*----------------추가 함수 end-------------------*/
 
 /* Returns true if T appears to point to a valid thread. */
@@ -251,9 +254,26 @@ void thread_unblock(struct thread *t)
 
 	old_level = intr_disable();
 	ASSERT(t->status == THREAD_BLOCKED);
+	/*-------------------------[project 1-2]-------------------------
 	list_push_back(&ready_list, &t->elem);
+	-------------------------[project 1-2]-------------------------*/
+	insert_to_ready(t);
+
 	t->status = THREAD_READY;
 	intr_set_level(old_level);
+}
+
+/* 현재 스레드와 priority를 비교하고, ready_list에 추가*/
+void insert_to_ready(struct thread *t)
+{
+	list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
+
+	struct list_elem *max_priority_elem = list_head(&ready_list);
+	int max_priority = list_entry(max_priority_elem, struct thread, elem)->priority;
+	if (max_priority > thread_current()->priority)
+	{
+		schedule();
+	}
 }
 
 /* Returns the name of the running thread. */
@@ -316,7 +336,11 @@ void thread_yield(void)
 
 	old_level = intr_disable();
 	if (curr != idle_thread)
+		/*-------------------------[project 1-2]-------------------------
 		list_push_back(&ready_list, &curr->elem);
+		-------------------------[project 1-2]-------------------------*/
+		insert_to_ready(curr);
+
 	do_schedule(THREAD_READY);
 	intr_set_level(old_level);
 }
@@ -324,7 +348,9 @@ void thread_yield(void)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-	thread_current()->priority = new_priority;
+	struct thread * cur_t = thread_current();
+	cur_t->priority = new_priority;
+	insert_to_ready(cur_t);
 }
 
 /* Returns the current thread's priority. */
@@ -657,7 +683,7 @@ void thread_wakeup(int64_t ticks) /* ticks: global ticks */
 		}
 		else /* 깨울 스레드가 아니면 */
 		{
-			curr = list_next(curr); 
+			curr = list_next(curr);
 			update_next_to_wake(t->wake_up_tick);
 		}
 	}
@@ -675,3 +701,13 @@ int64_t get_next_to_wakeup(void)
 	/* ⚠️ 이후 재새용성을 위한 함수 */
 }
 /*-------------------------[project 1]-------------------------*/
+
+static bool
+priority_less(const struct list_elem *a_, const struct list_elem *b_,
+			  void *aux UNUSED)
+{
+	const struct thread *a = list_entry(a_, struct thread, elem);
+	const struct thread *b = list_entry(b_, struct thread, elem);
+
+	return a->priority < b->priority;
+}
