@@ -73,7 +73,7 @@ static int64_t min_ticks; /*🤔*/
 
 bool priority_less(const struct list_elem *a_, const struct list_elem *b_,
 				   void *aux UNUSED);
-void insert_to_ready(struct thread *t);
+// void insert_to_ready(struct thread *t);
 bool is_cur_high(void);
 /*----------------추가 함수 end-------------------*/
 
@@ -87,10 +87,10 @@ bool is_cur_high(void);
  * somewhere in the middle, this locates the curent thread. */
 #define running_thread() ((struct thread *)(pg_round_down(rrsp())))
 
-	// Global descriptor table for the thread_start.
-	// Because the gdt will be setup after the thread_init, we should
-	// setup temporal gdt first.
-	static uint64_t gdt[3] = {0, 0x00af9a000000ffff, 0x00cf92000000ffff};
+// Global descriptor table for the thread_start.
+// Because the gdt will be setup after the thread_init, we should
+// setup temporal gdt first.
+static uint64_t gdt[3] = {0, 0x00af9a000000ffff, 0x00cf92000000ffff};
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -220,7 +220,12 @@ tid_t thread_create(const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 	/* Add to run queue. */
-	thread_unblock(t);
+	thread_unblock(t); // t를 ready list에 추가함.
+	if (!is_cur_high())
+	{
+		thread_yield();
+	}
+	// ready head 가 크면 yield
 
 	return tid;
 }
@@ -259,29 +264,27 @@ void thread_unblock(struct thread *t)
 	list_push_back(&ready_list, &t->elem);
 	-------------------------[project 1-2]-------------------------*/
 	t->status = THREAD_READY;
-	insert_to_ready(t);
+	list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
+	// 우선순위 정렬에 맞게 readu list에 넣는다.
 	intr_set_level(old_level);
 }
-
+// 씹 적폐 만악의 근원 이완용
 /* 현재 스레드와 priority를 비교하고, ready_list에 추가*/
-void insert_to_ready(struct thread *t)
-{
-	if (t != idle_thread)
-	{
-		list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
-		if (!list_empty(&ready_list))
-		{
-			if (!is_cur_high)
-			{
-				thread_yield();
-			}
-		}
-	}
-}
+// void insert_to_ready(struct thread *t)
+// {
+// 	list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
+// }
 
 bool is_cur_high(void)
 {
-	(thread_current()->priority >= list_entry(list_head(&ready_list), struct thread, elem)->priority) ? 1 : 0;
+	if (thread_current()->priority >= list_entry(list_head(&ready_list), struct thread, elem)->priority)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 /* Returns the name of the running thread. */
@@ -348,9 +351,12 @@ void thread_yield(void)
 		/*-------------------------[project 1-2]-------------------------
 		list_push_back(&ready_list, &curr->elem);
 		-------------------------[project 1-2]-------------------------*/
-		insert_to_ready(curr);
+
+		// list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
+		// unblock과 마찬가지로 우선순위 정렬에 맞게 READY LIST에 삽입
 	}
 	do_schedule(THREAD_READY);
+	list_insert_ordered(&ready_list, &curr->elem, priority_less, NULL);
 	intr_set_level(old_level);
 }
 
@@ -362,7 +368,11 @@ void thread_set_priority(int new_priority)
 
 	cur_t->priority = new_priority;
 	old_level = intr_disable();
-	thread_yield();
+	// 바뀐 running_thread의 우선순위와 READY_HEAD와 비교하여 상황에 따라 냅두던가 or yield
+	if (!is_cur_high())
+	{
+		thread_yield();
+	}
 	intr_set_level(old_level);
 }
 
@@ -588,8 +598,8 @@ thread_launch(struct thread *th)
  * This function modify current thread's status to status and then
  * finds another thread to run and switches to it.
  * It's not safe to call printf() in the schedule(). */
-static void
-do_schedule(int status)
+/* running thread를 어떠한 상태 status로 바꾸고 싶을 때 사용하는 함수*/
+static void do_schedule(int status)
 {
 	ASSERT(intr_get_level() == INTR_OFF);
 	ASSERT(thread_current()->status == THREAD_RUNNING);
@@ -603,14 +613,15 @@ do_schedule(int status)
 	schedule();
 }
 
-static void
-schedule(void)
+/* ready의 head의 status를 바꾸는 함수. schedule이전에 꼭꼭 running thread의 starus를 바꿔야한다.
+curr_thread가 running이 아니고 ,ready_list의 head가 정상이고, */
+static void schedule(void)
 {
-	struct thread *curr = running_thread();
-	struct thread *next = next_thread_to_run();
+	struct thread *curr = running_thread();		// running Thread
+	struct thread *next = next_thread_to_run(); // ready의 head
 
 	ASSERT(intr_get_level() == INTR_OFF);
-	ASSERT(curr->status != THREAD_RUNNING);
+	ASSERT(curr->status != THREAD_RUNNING); // running thread가
 	ASSERT(is_thread(next));
 	/* Mark us as running. */
 	next->status = THREAD_RUNNING;
@@ -623,7 +634,7 @@ schedule(void)
 	process_activate(next);
 #endif
 
-	if (curr != next)
+	if (curr != next) // 다음이 없을 때 dying list에 넣기(분리수거)
 	{
 		/* If the thread we switched from is dying, destroy its struct
 		   thread. This must happen late so that thread_exit() doesn't
@@ -640,7 +651,7 @@ schedule(void)
 
 		/* Before switching the thread, we first save the information
 		 * of current running. */
-		thread_launch(next);
+		thread_launch(next); // curr<->next 교체
 	}
 }
 
