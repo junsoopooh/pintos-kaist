@@ -70,7 +70,6 @@ void thread_wakeup(int64_t ticks);
 void thread_sleep(int64_t ticks);
 int64_t get_next_to_wakeup(void);
 static int64_t min_ticks; /*🤔*/
-
 bool priority_less(const struct list_elem *a_, const struct list_elem *b_,
 				   void *aux UNUSED);
 // void insert_to_ready(struct thread *t);
