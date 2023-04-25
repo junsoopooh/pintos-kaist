@@ -114,10 +114,14 @@ sema_up (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	if (!list_empty (&sema->waiters))
-		thread_unblock (list_entry (list_pop_front (&sema->waiters),
-					struct thread, elem));
+	{
+		list_sort(&sema->waiters, priority_less, NULL); // 함수변경
+		thread_unblock(list_entry(list_pop_front(&sema->waiters),
+								  struct thread, elem));
+	}
+
 	sema->value++;
-	list_sort(&sema->waiters, sem_priority_less, NULL);
+	test_max_priority();
 	intr_set_level (old_level);
 }
 
@@ -288,7 +292,7 @@ cond_wait (struct condition *cond, struct lock *lock) {
 
 	sema_init (&waiter.semaphore, 0);
 	// list_push_back (&cond->waiters, &waiter.elem);
-	list_insert_ordered(&cond->waiters, &waiter.elem, priority_less, NULL);
+	list_insert_ordered(&cond->waiters, &waiter.elem, sem_priority_less, NULL);
 	lock_release (lock);
 	sema_down (&waiter.semaphore);
 	lock_acquire (lock);
@@ -309,9 +313,13 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	if (!list_empty (&cond->waiters))
-		sema_up (&list_entry (list_pop_front (&cond->waiters),
-					struct semaphore_elem, elem)->semaphore);
-	list_sort(&cond->waiters, sem_priority_less, NULL);
+		{
+		list_sort(&cond->waiters, sem_priority_less, NULL);
+		sema_up(&list_entry(list_pop_front(&cond->waiters),
+							struct semaphore_elem, elem)
+					 ->semaphore);
+		}
+
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
@@ -334,5 +342,5 @@ bool sem_priority_less(const struct semaphore *a, const struct semaphore *b,
 {
 	int pri_a = list_entry(list_head(&a->waiters), struct thread, elem)->priority;
 	int pri_b = list_entry(list_head(&b->waiters), struct thread, elem)->priority;
-	return (pri_a) > (pri_b);
+	return (pri_a) < (pri_b);
 }
