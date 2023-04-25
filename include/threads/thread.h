@@ -35,6 +35,7 @@ static struct list ready_list;
 static struct list sleep_list;
 void update_next_to_wake(int64_t local_ticks);
 int64_t get_next_to_wakeup(void);
+
 /*----------------추가 선언 함수 end-------------------*/
 
 /* A kernel thread or user process.

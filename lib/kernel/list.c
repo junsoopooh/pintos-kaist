@@ -416,6 +416,10 @@ list_sort (struct list *list, list_less_func *less, void *aux) {
    sorted according to LESS given auxiliary data AUX.
    Runs in O(n) average case in the number of elements in LIST. */
 void
+list_push_back (struct list *list, struct list_elem *elem) {
+	list_insert (list_end (list), elem);
+}
+void
 list_insert_ordered (struct list *list, struct list_elem *elem,
 		list_less_func *less, void *aux) {
 	struct list_elem *e;
