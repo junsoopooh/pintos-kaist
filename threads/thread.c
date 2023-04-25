@@ -220,12 +220,7 @@ tid_t thread_create(const char *name, int priority,
 
 	/* Add to run queue. */
 	thread_unblock(t); // t를 ready list에 추가함.
-	// test_max_priority();
-	if (t->priority > thread_current()->priority)
-	{
-		thread_yield();
-	}
-	// ready head 가 크면 yield
+	test_max_priority(); // 준코 여기 비교, yield 다있으니까
 
 	return tid;
 }
@@ -263,8 +258,9 @@ void thread_unblock(struct thread *t)
 	/*-------------------------[project 1-2]-------------------------
 	list_push_back(&ready_list, &t->elem);
 	-------------------------[project 1-2]-------------------------*/
-	t->status = THREAD_READY;
 	list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
+	t->status = THREAD_READY;
+	
 	// 우선순위 정렬에 맞게 readu list에 넣는다.
 	intr_set_level(old_level);
 }
@@ -276,8 +272,15 @@ void thread_unblock(struct thread *t)
 // }
 
 void test_max_priority(void)
-{
-	if (thread_current()->priority < list_entry(list_head(&ready_list), struct thread, elem)->priority)
+{	
+	if(list_empty(&ready_list))
+	{
+		return;
+	}
+	int run_priority = thread_current()->priority;
+	struct list_elem *e= list_begin(&ready_list);
+	struct thread *t = list_entry(e, struct thread, elem);
+	if(run_priority < t->priority)
 	{
 		thread_yield();
 	}
@@ -359,14 +362,11 @@ void thread_yield(void)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-	enum intr_level old_level;
-	struct thread *cur_t = thread_current();
+	thread_current()->priority = new_priority;
 
-	cur_t->priority = new_priority;
-	old_level = intr_disable();
-	// 바뀐 running_thread의 우선순위와 READY_HEAD와 비교하여 상황에 따라 냅두던가 or yield
+
+	// 바뀐 running_thread의 우선순위와 READY_HEAD와 비교하여 상황에 따라 냅두던가 or yield 준코
 	test_max_priority();
-	intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -719,11 +719,9 @@ int64_t get_next_to_wakeup(void)
 }
 /*-------------------------[project 1]-------------------------*/
 
-bool priority_less(const struct list_elem *a_, const struct list_elem *b_,
-				   void *aux UNUSED)
-{
-	const struct thread *a = list_entry(a_, struct thread, elem);
-	const struct thread *b = list_entry(b_, struct thread, elem);
-
-	return a->priority < b->priority;
+bool priority_less(const struct list_elem *a, const struct list_elem *b,
+				   void *aux UNUSED){
+	struct thread *t_a = list_entry(a, struct thread, elem);
+	struct thread *t_b = list_entry(b, struct thread, elem);
+	return (t_a->priority) > (t_b->priority);
 }
