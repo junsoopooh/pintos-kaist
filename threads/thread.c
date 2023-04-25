@@ -74,7 +74,7 @@ static int64_t min_ticks; /*🤔*/
 bool priority_less(const struct list_elem *a_, const struct list_elem *b_,
 				   void *aux UNUSED);
 // void insert_to_ready(struct thread *t);
-bool is_cur_high(void);
+void test_max_priority(void);
 /*----------------추가 함수 end-------------------*/
 
 /* Returns true if T appears to point to a valid thread. */
@@ -221,7 +221,8 @@ tid_t thread_create(const char *name, int priority,
 
 	/* Add to run queue. */
 	thread_unblock(t); // t를 ready list에 추가함.
-	if (!is_cur_high())
+	// test_max_priority();
+	if (t->priority > thread_current()->priority)
 	{
 		thread_yield();
 	}
@@ -275,15 +276,11 @@ void thread_unblock(struct thread *t)
 // 	list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
 // }
 
-bool is_cur_high(void)
+void test_max_priority(void)
 {
-	if (thread_current()->priority >= list_entry(list_head(&ready_list), struct thread, elem)->priority)
+	if (thread_current()->priority < list_entry(list_head(&ready_list), struct thread, elem)->priority)
 	{
-		return true;
-	}
-	else
-	{
-		return false;
+		thread_yield();
 	}
 }
 
@@ -351,12 +348,12 @@ void thread_yield(void)
 		/*-------------------------[project 1-2]-------------------------
 		list_push_back(&ready_list, &curr->elem);
 		-------------------------[project 1-2]-------------------------*/
+		list_insert_ordered(&ready_list, &curr->elem, priority_less, NULL);
 
 		// list_insert_ordered(&ready_list, &t->elem, priority_less, NULL);
 		// unblock과 마찬가지로 우선순위 정렬에 맞게 READY LIST에 삽입
 	}
 	do_schedule(THREAD_READY);
-	list_insert_ordered(&ready_list, &curr->elem, priority_less, NULL);
 	intr_set_level(old_level);
 }
 
@@ -369,10 +366,7 @@ void thread_set_priority(int new_priority)
 	cur_t->priority = new_priority;
 	old_level = intr_disable();
 	// 바뀐 running_thread의 우선순위와 READY_HEAD와 비교하여 상황에 따라 냅두던가 or yield
-	if (!is_cur_high())
-	{
-		thread_yield();
-	}
+	test_max_priority();
 	intr_set_level(old_level);
 }
 
