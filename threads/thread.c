@@ -349,9 +349,12 @@ void thread_yield(void)
 void thread_set_priority(int new_priority)
 {
 	thread_current()->priority = new_priority;
+	thread_current()->init_priority = new_priority;
 
-	// 바뀐 running_thread의 우선순위와 READY_HEAD와 비교하여 상황에 따라 냅두던가 or yield 준코
+	refresh_priority();
+	donate_priority();
 	test_max_priority();
+
 }
 
 /* Returns the current thread's priority. */
@@ -455,6 +458,11 @@ init_thread(struct thread *t, const char *name, int priority)
 	t->tf.rsp = (uint64_t)t + PGSIZE - sizeof(void *);
 	t->priority = priority;
 	t->magic = THREAD_MAGIC;
+	/*----------------[project1]-------------------*/
+	t->init_priority = priority;
+	t->wait_on_lock = NULL;
+	list_init(&t->donations);
+	/*----------------[project1]-------------------*/
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -720,7 +728,7 @@ void test_max_priority(void)
 	int run_priority = thread_current()->priority;
 	struct list_elem *e = list_front(&ready_list);
 	struct thread *t = list_entry(e, struct thread, elem);
-	if (run_priority < t->priority)
+	if (run_priority <= t->priority)
 	{
 		thread_yield();
 	}

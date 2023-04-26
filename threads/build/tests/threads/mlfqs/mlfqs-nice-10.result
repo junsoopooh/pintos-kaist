@@ -1,14 +1,11 @@
 FAIL
-Some tick counts were missing or differed from those expected by more than 25.
-thread   actual <-> expected explanation
------- -------- --- -------- ----------------------------------------
-     0      301 <<< 672      Too small, by 346.
-     1      300 <<< 588      Too small, by 263.
-     2      300 <<< 492      Too small, by 167.
-     3      301 <<< 408      Too small, by 82.
-     4      301  =  316      
-     5      301 >>> 232      Too big, by 44.
-     6      301 >>> 152      Too big, by 124.
-     7      301 >>> 92       Too big, by 184.
-     8      301 >>> 40       Too big, by 236.
-     9      300 >>> 8        Too big, by 267.
+Kernel panic in run: PANIC at ../../lib/kernel/list.c:270 in list_front(): assertion `!list_empty (list)' failed.
+Call stack: 0x800421392b 0x800421424e 0x800420a42a 0x800420a1be 0x80042078ca 0x80042069a5 0x8004206068
+Translation of call stack:
+0x000000800421392b: debug_panic (lib/kernel/debug.c:32)
+0x000000800421424e: list_front (lib/kernel/list.c:271)
+0x000000800420a42a: refresh_priority (threads/synch.c:302)
+0x000000800420a1be: lock_release (threads/synch.c:254)
+0x00000080042078ca: allocate_tid (threads/thread.c:653)
+0x00000080042069a5: thread_init (threads/thread.c:131)
+0x0000008004206068: main (threads/init.c:83)
