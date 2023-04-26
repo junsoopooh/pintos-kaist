@@ -197,7 +197,7 @@ void lock_init(struct lock *lock)
    This function may sleep, so it must not be called within an
    interrupt handler.  This function may be called with
    interrupts disabled, but interrupts will be turned back on if
-   we need to sleep. 
+   we need to sleep.
    */
 void lock_acquire(struct lock *lock)
 {
@@ -269,7 +269,7 @@ void donate_priority(void)
 {
 	struct thread *lock_owner_t = thread_current()->wait_on_lock->holder;
 	struct list donation_list = lock_owner_t->donations;
-	for (struct list_elem *find = list_front(&donation_list); find != NULL; find = list_next(find))
+	for (struct list_elem *find = list_begin(&donation_list); find != NULL; find = list_next(find))
 	{
 		if (list_entry(find, struct thread, elem)->priority < thread_current()->priority)
 		{
@@ -296,11 +296,11 @@ void remove_with_lock(struct lock *lock)
 }
 
 void refresh_priority(void)
-{	
+{
 	int curr_pri = thread_current()->priority;
 	curr_pri = thread_current()->init_priority;
 
-	int don_max_pri = list_entry(list_front(&(thread_current()->donations)), struct thread, elem)->priority;
+	int don_max_pri = list_entry(list_begin(&(thread_current()->donations)), struct thread, elem)->priority;
 	if (don_max_pri > curr_pri)
 	{
 		curr_pri = don_max_pri;
