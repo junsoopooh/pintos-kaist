@@ -1,27 +1,11 @@
 FAIL
-Test output failed to match any acceptable form.
-
-Acceptable output:
-  (priority-donate-one) begin
-  (priority-donate-one) This thread should have priority 32.  Actual priority: 32.
-  (priority-donate-one) This thread should have priority 33.  Actual priority: 33.
-  (priority-donate-one) acquire2: got the lock
-  (priority-donate-one) acquire2: done
-  (priority-donate-one) acquire1: got the lock
-  (priority-donate-one) acquire1: done
-  (priority-donate-one) acquire2, acquire1 must already have finished, in that order.
-  (priority-donate-one) This should be the last line before finishing this test.
-  (priority-donate-one) end
-Differences in `diff -u' format:
-  (priority-donate-one) begin
-- (priority-donate-one) This thread should have priority 32.  Actual priority: 32.
-- (priority-donate-one) This thread should have priority 33.  Actual priority: 33.
-+ (priority-donate-one) This thread should have priority 32.  Actual priority: 31.
-+ (priority-donate-one) This thread should have priority 33.  Actual priority: 31.
-  (priority-donate-one) acquire2: got the lock
-  (priority-donate-one) acquire2: done
-  (priority-donate-one) acquire1: got the lock
-  (priority-donate-one) acquire1: done
-  (priority-donate-one) acquire2, acquire1 must already have finished, in that order.
-  (priority-donate-one) This should be the last line before finishing this test.
-  (priority-donate-one) end
+Kernel panic in run: PANIC at ../../lib/kernel/list.c:270 in list_front(): assertion `!list_empty (list)' failed.
+Call stack: 0x800421392b 0x800421424e 0x800420a42a 0x800420a1be 0x80042078ca 0x80042069a5 0x8004206068
+Translation of call stack:
+0x000000800421392b: debug_panic (lib/kernel/debug.c:32)
+0x000000800421424e: list_front (lib/kernel/list.c:271)
+0x000000800420a42a: refresh_priority (threads/synch.c:302)
+0x000000800420a1be: lock_release (threads/synch.c:254)
+0x00000080042078ca: allocate_tid (threads/thread.c:653)
+0x00000080042069a5: thread_init (threads/thread.c:131)
+0x0000008004206068: main (threads/init.c:83)
