@@ -38,7 +38,7 @@ bool sem_priority_less(const struct list_elem *a, const struct list_elem *b,
 void donate_priority(void);
 void remove_with_lock(struct lock *lock);
 void refresh_priority(void);
-bool donate_priority_less(const struct list_elem *a, const struct list_elem *b,
+bool donate_priority_less(struct list_elem *a, struct list_elem *b,
 						  void *aux UNUSED);
 /* --------------------[project1]-----------------------*/
 /* Initializes semaphore SEMA to VALUE.  A semaphore is a
@@ -213,13 +213,13 @@ void lock_acquire(struct lock *lock)
 	{
 		cur_t->wait_on_lock = lock;
 		// cur_t->init_priority = cur_t->priority;
-		list_insert_ordered(&lock->holder->donations, &thread_current()->donation_elem,
+		list_insert_ordered(&lock->holder->donations, &cur_t->donation_elem,
 							donate_priority_less, 0); // 추가
 		donate_priority();
 	}
 
 	sema_down(&lock->semaphore);
-	thread_current()->wait_on_lock = NULL;
+	cur_t->wait_on_lock = NULL;
 	lock->holder = thread_current();
 }
 
@@ -274,9 +274,9 @@ void donate_priority(void)
 {
 	struct thread *cur = thread_current(); // 현재 스레드
 	int depth;							   // 중첩 기부의 깊이
-	while (depth < 8)
+	for (depth = 0; depth < 8; depth++)
 	{ // 최대 8단계까지 수행
-		depth++;
+		// depth++;
 		if (!cur->wait_on_lock) // 추가
 			break;
 
@@ -301,20 +301,21 @@ void donate_priority(void)
 
 void remove_with_lock(struct lock *lock)
 {
-	if (lock->holder != NULL)
+	// if (lock->holder != NULL)
+	// {
+	// struct list *donation_list = &(thread_current()->donations);
+	// struct list *donation_list = &lock->holder->donations;
+	struct list_elem *find;
+	struct thread *curr = thread_current();
+	for (find = list_begin(&curr->donations); find != list_end(&curr->donations); find = list_next(find))
 	{
-		// struct list *donation_list = &(thread_current()->donations);
-		// struct list *donation_list = &lock->holder->donations;
-		struct list_elem *find;
-		struct thread *curr = thread_current();
-		for (find = list_begin(&curr->donations); find != list_end(&curr->donations); find = list_next(find))
+		struct thread *t = list_entry(find, struct thread, donation_elem);
+		if (t->wait_on_lock == lock)
 		{
-			if (list_entry(find, struct thread, donation_elem)->wait_on_lock == lock)
-			{
-				list_remove(find);
-			}
+			list_remove(&t->donation_elem); // 여기!!
 		}
 	}
+	// }
 }
 
 void refresh_priority(void)
@@ -450,7 +451,7 @@ bool sem_priority_less(const struct list_elem *a, const struct list_elem *b,
 }
 /* --------------------[project1]-----------------------*/
 
-bool donate_priority_less(const struct list_elem *a, const struct list_elem *b,
+bool donate_priority_less(struct list_elem *a, struct list_elem *b,
 						  void *aux UNUSED)
 {
 	struct thread *t_a = list_entry(a, struct thread, elem);
