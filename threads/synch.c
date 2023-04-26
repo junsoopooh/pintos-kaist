@@ -31,20 +31,21 @@
 #include <string.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
-
-bool sem_priority_less(const struct semaphore *a, const struct semaphore *b,
+/* --------------------[project1]-----------------------*/
+bool sem_priority_less(const struct list_elem *a, const struct list_elem *b,
 					   void *aux UNUSED);
+/* --------------------[project1]-----------------------*/
+/* Initializes semaphore SEMA to VALUE.  A semaphore is a
+   nonnegative integer along with two atomic operators for
+   manipulating it:
 
-	/* Initializes semaphore SEMA to VALUE.  A semaphore is a
-	   nonnegative integer along with two atomic operators for
-	   manipulating it:
+   - down or "P": wait for the value to become positive, then
+   decrement it.
 
-	   - down or "P": wait for the value to become positive, then
-	   decrement it.
+   - up or "V": increment the value (and wake up one waiting
+   thread, if any). */
 
-	   - up or "V": increment the value (and wake up one waiting
-	   thread, if any). */
-	void sema_init(struct semaphore *sema, unsigned value)
+void sema_init(struct semaphore *sema, unsigned value)
 {
 	ASSERT (sema != NULL);
 
@@ -337,10 +338,17 @@ cond_broadcast (struct condition *cond, struct lock *lock) {
 		cond_signal (cond, lock);
 }
 
-bool sem_priority_less(const struct semaphore *a, const struct semaphore *b,
+/* --------------------[project1]-----------------------*/
+
+bool sem_priority_less(const struct list_elem *a, const struct list_elem *b,
 					   void *aux UNUSED)
 {
-	int pri_a = list_entry(list_head(&a->waiters), struct thread, elem)->priority;
-	int pri_b = list_entry(list_head(&b->waiters), struct thread, elem)->priority;
-	return (pri_a) < (pri_b);
+	struct semaphore_elem *a_sema = list_entry(a, struct semaphore_elem, elem);
+	struct semaphore_elem *b_sema = list_entry(b, struct semaphore_elem, elem);
+
+	struct list *waiter_a_sema = &(a_sema->semaphore.waiters);
+	struct list *waiter_b_sema = &(b_sema->semaphore.waiters);
+
+	return list_entry(list_begin(waiter_a_sema), struct thread, elem)->priority > list_entry(list_begin(waiter_b_sema), struct thread, elem)->priority;
 }
+/* --------------------[project1]-----------------------*/

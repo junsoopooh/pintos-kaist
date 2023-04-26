@@ -1,11 +1,11 @@
 FAIL
 Kernel panic in run: PANIC at ../../tests/threads/tests.c:93 in fail(): test failed
-Call stack: 0x8004213635 0x8004216c37 0x8004219c73 0x8004216a71 0x8004206636 0x8004206783 0x8004206120
+Call stack: 0x8004213661 0x8004216c63 0x8004219c9f 0x8004216a9d 0x8004206636 0x8004206783 0x8004206120
 Translation of call stack:
-0x0000008004213635: debug_panic (lib/kernel/debug.c:32)
-0x0000008004216c37: pass (tests/threads/tests.c:99)
-0x0000008004219c73: test_mlfqs_load_1 (tests/threads/mlfqs/mlfqs-load-1.c:31)
-0x0000008004216a71: run_test (tests/threads/tests.c:57)
+0x0000008004213661: debug_panic (lib/kernel/debug.c:32)
+0x0000008004216c63: pass (tests/threads/tests.c:99)
+0x0000008004219c9f: test_mlfqs_load_1 (tests/threads/mlfqs/mlfqs-load-1.c:31)
+0x0000008004216a9d: run_test (tests/threads/tests.c:57)
 0x0000008004206636: run_task (threads/init.c:252)
 0x0000008004206783: run_actions (threads/init.c:297)
 0x0000008004206120: main (threads/init.c:125)
