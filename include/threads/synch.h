@@ -53,6 +53,8 @@ void cond_broadcast(struct condition *, struct lock *);
 
 #endif /* threads/synch.h */
 
+/*-------------------------[project 1]-------------------------*/
 void donate_priority(void);
 void remove_with_lock(struct lock *lock);
 void refresh_priority(void);
+/*-------------------------[project 1]-------------------------*/
