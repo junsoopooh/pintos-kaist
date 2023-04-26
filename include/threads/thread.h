@@ -28,7 +28,7 @@ typedef int tid_t;
 #define PRI_DEFAULT 31 /* Default priority. */
 #define PRI_MAX 63	   /* Highest priority. */
 
-/*----------------추가 선언 함수-------------------*/
+/*----------------[project1]-------------------*/
 void thread_sleep(int64_t ticks);
 static struct list ready_list;
 
@@ -36,7 +36,7 @@ static struct list sleep_list;
 void update_next_to_wake(int64_t local_ticks);
 int64_t get_next_to_wakeup(void);
 
-/*----------------추가 선언 함수 end-------------------*/
+/*----------------[project1]-------------------*/
 
 /* A kernel thread or user process.
  *
@@ -109,6 +109,13 @@ struct thread
 	/* local tick */
 	int64_t wake_up_tick;
 
+	/*----------------[project1]-------------------*/
+	/* priority donaion 관련 element 추가 */
+	int init_priority;					// donation이후 우선순위를 초기화하기 위해 초기값 저장
+	struct lock *wait_on_lock;			// 해당 스레드가 대기하고 있는 lock자료구조 주소 저장
+	struct list donations;				// multiple donation 을 고려하기 위해사용
+	struct list_elem donation_elem;		// multiple donation 을 고려하기 위해사용
+	/*----------------[project1]-------------------*/
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4; /* Page map level 4 */
