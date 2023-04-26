@@ -68,7 +68,7 @@ void sema_up(struct semaphore *sema)
 	old_level = intr_disable();
 	if (!list_empty(&sema->waiters))
 	{
-		list_sort(&sema->waiters, donate_priority_less, 0); // 🤔
+		list_sort(&sema->waiters, priority_less, NULL); // 🤔
 		thread_unblock(list_entry(list_pop_front(&sema->waiters),
 								  struct thread, elem));
 	}
@@ -130,7 +130,7 @@ void lock_acquire(struct lock *lock)
 	{
 		cur_t->wait_on_lock = lock;
 		list_insert_ordered(&lock->holder->donations, &cur_t->donation_elem,
-							donate_priority_less, 0); // 추가 🤔
+							priority_less, 0); // 추가 🤔
 		donate_priority();
 	}
 
@@ -214,7 +214,7 @@ void remove_with_lock(struct lock *lock)
 		struct thread *t = list_entry(find, struct thread, donation_elem);
 		if (t->wait_on_lock == lock)
 		{
-			list_remove(&t->donation_elem); // 인자 🤔
+			list_remove(find); // 인자 🤔
 		}
 	}
 	// }
@@ -227,7 +227,7 @@ void refresh_priority(void)
 
 	if (!list_empty(&curr->donations))
 	{
-		list_sort(&curr->donations, donate_priority_less, 0);
+		list_sort(&curr->donations, priority_less, 0);
 
 		struct thread *front = list_entry(list_front(&curr->donations), struct thread, donation_elem);
 
