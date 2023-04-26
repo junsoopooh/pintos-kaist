@@ -104,8 +104,7 @@ struct thread
 	int priority;			   /* Priority. */
 
 	/* Shared between thread.c and synch.c. */
-	struct list_elem elem; /* List element. */
-
+	struct list_elem elem; /* List elemen
 	/* local tick */
 	int64_t wake_up_tick;
 
