@@ -220,7 +220,7 @@ tid_t thread_create(const char *name, int priority,
 
 	/* Add to run queue. */
 	thread_unblock(t); // t를 ready list에 추가함.
-	
+
 	test_max_priority(); // 준코 여기 비교, yield 다있으니까
 
 	return tid;
@@ -261,7 +261,7 @@ void thread_unblock(struct thread *t)
 	-------------------------[project 1-2]-------------------------*/
 	list_insert_ordered(&ready_list, &t->elem, &priority_less, NULL);
 	t->status = THREAD_READY;
-	
+
 	// 우선순위 정렬에 맞게 readu list에 넣는다.
 	intr_set_level(old_level);
 }
@@ -348,13 +348,12 @@ void thread_yield(void)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-	thread_current()->priority = new_priority;
+	// thread_current()->priority = new_priority;
 	thread_current()->init_priority = new_priority;
 
 	refresh_priority();
-	donate_priority();
+	// donate_priority();
 	test_max_priority();
-
 }
 
 /* Returns the current thread's priority. */
@@ -734,5 +733,3 @@ void test_max_priority(void)
 	}
 }
 /*-------------------------[project 1]-------------------------*/
-
-
