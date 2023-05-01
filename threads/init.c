@@ -195,12 +195,14 @@ read_command_line(void)
 	argv[argc] = NULL;
 
 	/* Print kernel command line. */
-	printf("Kernel command line:");
+	printf("Kernel command line:\n");
+	printf("(args) begin\n");
+	printf("(args) argc = %d\n",argc);
 	for (i = 0; i < argc; i++)
 		if (strchr(argv[i], ' ') == NULL)
-			printf(" %s", argv[i]);
+			printf("(args) values[%d] = %s\n", i, argv[i]);
 		else
-			printf(" '%s'", argv[i]);
+			printf("%s\n", argv[i]);
 	printf("\n");
 
 	return argv;

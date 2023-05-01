@@ -46,9 +46,9 @@ process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
 
-	char *token, *save_ptr;
+	//준코 : *token 삭제
+	char *save_ptr;
 
-	token = strtok_r (file_name, " ", &save_ptr);
 	
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
@@ -58,7 +58,9 @@ process_create_initd (const char *file_name) {
 	strlcpy (fn_copy, file_name, PGSIZE);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
+	strtok_r(file_name, " ", &save_ptr);
+
+	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -172,8 +174,8 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
-
-
+	char *values[128]; //준코
+	memcpy(values, file_name, strlen(file_name)+1);
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -182,20 +184,23 @@ process_exec (void *f_name) {
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
-    char *token, *save_ptr;
-	char values[100];
+  
     process_cleanup ();
 
-	int i = 1;
-    token = strtok_r (f_name, " ", &save_ptr);
-	values[0] = token;
+
+	char *token, *save_ptr;
+	
+	int i = 0; // 준코
+
+    token = strtok_r (f_name, " ", &save_ptr); //준코
+	values[i] = token; // 준코
+
 	while(token != NULL)
 	{
 		token = strtok_r (NULL, " ", &save_ptr);
-		values[i] = token;
 		i++;
+		values[i] = token;
 	}
-		argument_stack(values, i, &_if);
 	/* We first kill the current context */
 	
 
@@ -206,6 +211,8 @@ process_exec (void *f_name) {
 	palloc_free_page (file_name);
 	if (!success)
 		return -1;
+	
+	argument_stack(i, values, &_if);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -493,38 +500,40 @@ validate_segment (const struct Phdr *phdr, struct file *file) {
 	return true;
 }
 
-void argument_stack(char **parse, int count, void **esp)
-{	
-	int size = 0; 
-	char value_address[count];
-	for(int i = count-1;i >-1; i--)
-	{
-		*esp -= sizeof(parse[i]);
-		size += sizeof(parse[i]);
-		**(char **)esp = parse[i];
-		value_address[i] = &esp;
-	}
+void argument_stack(char **parse, int count, struct intr_frame *if_)
+{	 
+	char *value_address[128];
 
-	if(size % 8 != 0){
-		int padding = 8 - size%8;
-		*esp -= padding;
-		memset (*esp, 0, padding);  
-	}
-	*esp -= sizeof(char);
-	memset (*esp, 0, sizeof(char));
-
-	for(int i = count-1;i >-1; i--)
+	for(int i = count-1;i >=0; i--)
 	{	
-
-		*esp -= sizeof(value_address[i]);
-		**(char **)esp = value_address[i];
+		int parse_len = strlen(parse[i]);
+		if_ -> rsp = if_ -> rsp - (parse_len+1);
+		memcpy(if_ -> rsp, parse[i], parse_len+1);
+		value_address[i] = if_ -> rsp;
 	}
-	*esp -= sizeof(count);
-	memset (*esp, count, sizeof(count));
-	*esp -= sizeof(char);
-	memset (*esp, 0, sizeof(char));
 
+	while (if_ -> rsp % 8 !=) 0{
+		if_ -> rsp--;
+		*(uint8_t *)(if_ -> rsp) = 0;
+	}
+
+	for(int i = count;i >= 0; i--)
+	{	
+		if_ -> rsp = if_ -> rsp -8;
+
+		if ( i == count)
+			memset(if_ -> rsp, 0, sizeof(char **));
 		
+		else{
+			memcpy(if_ -> rsp, &value_address[i], sizeof(char **));
+	}
+	if_ -> rsp = if_ -> rsp - 8;
+	memset(if_ -> rsp, 0, sizeof(void *));
+
+	if_ -> R.rdi = count;
+	if_ -> R.rsi = if_ -> rsp + 8;
+
+	}		
 }
 
 

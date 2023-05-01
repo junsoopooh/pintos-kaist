@@ -539,7 +539,7 @@ bool priority_less(const struct list_elem *a, const struct list_elem *b,
 
 void test_max_priority(void)
 {
-	if (list_empty(&ready_list))
+	if (list_empty(&ready_list) || intr_context())
 	{
 		return;
 	}
