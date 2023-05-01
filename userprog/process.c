@@ -210,7 +210,6 @@ int process_exec(void *f_name)
 	/* If load failed, quit. */
 	if (!success)
 	{
-		palloc_free_page(file_name);
 		return -1;
 	}
 
