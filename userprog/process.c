@@ -37,11 +37,15 @@ process_init (void) {
  * The new thread may be scheduled (and may even exit)
  * before process_create_initd() returns. Returns the initd's
  * thread id, or TID_ERROR if the thread cannot be created.
- * Notice that THIS SHOULD BE CALLED ONCE. */
+ * Notice that THIS SHOULD BE CALLED ONCE.
+ * = tid_t process_execute */
 tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
+
+	/* 첫번째 공백전까지의 문자열파싱*/
+	/* Create a new thread to execute FILE_NAME. */
 
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
@@ -159,16 +163,28 @@ error:
 }
 
 /* Switch the current execution context to the f_name.
- * Returns -1 on fail. */
+ * Returns -1 on fail.
+ = void start_process() */
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
+	struct intr_frame _if;
+	char *token, *save_ptr; /* 진교 추가*/
+	unsigned int count = 0; /* 진교 추가*/
 	bool success;
+
+	/* lib>string.c/strtok_r() 사용-> void argument_stack() 구현
+	argumnet_stack(parse, count, _if);
+	asmvolatile ("movl%0, %%esp; jmpintr_exit" : : "g" (&if_) :
+"memory");
+
+	디버깅 툴
+	hex_dump(if_.esp, if_.esp, PHYS_BASE –if_.esp, true);*/
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
-	struct intr_frame _if;
+	
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;

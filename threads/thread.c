@@ -127,15 +127,15 @@ tid_t thread_create(const char *name, int priority,
 {
 	struct thread *t;
 	tid_t tid;
-
+	
 	ASSERT(function != NULL);
 
-	t = palloc_get_page(PAL_ZERO);
+	t = palloc_get_page(PAL_ZERO); /* 페이지할당*/
 	if (t == NULL)
 		return TID_ERROR;
 
-	init_thread(t, name, priority);
-	tid = t->tid = allocate_tid();
+	init_thread(t, name, priority); /* thread 구조체 초기화*/
+	tid = t->tid = allocate_tid();	/* tid할당*/
 
 	t->tf.rip = (uintptr_t)kernel_thread;
 	t->tf.R.rdi = (uint64_t)function;
