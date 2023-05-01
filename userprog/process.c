@@ -213,11 +213,8 @@ int process_exec(void *f_name)
 		return -1;
 	}
 
-	argument_stack(values, i, &_if); // ???????????????????????
+	argument_stack(values, i, &_if);
 	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
-
-	_if.R.rdi = i;
-	_if.R.rsi = _if.rsp + 8;
 
 	palloc_free_page(file_name);
 
@@ -545,8 +542,13 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 			memcpy(_if->rsp, &value_address[i], 8);
 		}
 	}
+	/* fake address */
 	_if->rsp -= 8;
 	memset(_if->rsp, 0, 8);
+
+	/* register*/
+	_if->R.rdi = count;
+	_if->R.rsi = _if->rsp + 8;
 }
 
 #ifndef VM
@@ -629,7 +631,7 @@ setup_stack(struct intr_frame *if_)
 	{
 		success = install_page(((uint8_t *)USER_STACK) - PGSIZE, kpage, true);
 		if (success)
-			if_->rsp = USER_STACK - 12;
+			if_->rsp = USER_STACK;
 		else
 			palloc_free_page(kpage);
 	}
