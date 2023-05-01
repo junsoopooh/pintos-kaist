@@ -48,7 +48,7 @@ process_create_initd (const char *file_name) {
 
 	char *token, *save_ptr;
 
-	token = strtok_r (file_name, ' ', &save_ptr);
+	token = strtok_r (file_name, " ", &save_ptr);
 	
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
@@ -183,20 +183,19 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
     char *token, *save_ptr;
-	char *values[100];
+	char values[100];
     process_cleanup ();
-	
+
 	int i = 1;
     token = strtok_r (f_name, " ", &save_ptr);
 	values[0] = token;
-	while(token != NULL && i <= 100)
+	while(token != NULL)
 	{
 		token = strtok_r (NULL, " ", &save_ptr);
 		values[i] = token;
 		i++;
 	}
-	
-	argument_stack(values, i, &_if);	
+		argument_stack(values, i, &_if);
 	/* We first kill the current context */
 	
 
@@ -500,7 +499,7 @@ void argument_stack(char **parse, int count, void **esp)
 	char value_address[count];
 	for(int i = count-1;i >-1; i--)
 	{
-		*esp-= sizeof(parse[i]);
+		*esp -= sizeof(parse[i]);
 		size += sizeof(parse[i]);
 		**(char **)esp = parse[i];
 		value_address[i] = &esp;
