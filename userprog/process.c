@@ -38,11 +38,18 @@ process_init (void) {
  * before process_create_initd() returns. Returns the initd's
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
+ 
+// ppt 상의 process_execute()함수
+
 tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
 
+	char *token, *save_ptr;
+
+	token = strtok_r (file_name, ' ', &save_ptr);
+	
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
 	fn_copy = palloc_get_page (0);
@@ -51,7 +58,7 @@ process_create_initd (const char *file_name) {
 	strlcpy (fn_copy, file_name, PGSIZE);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -160,10 +167,13 @@ error:
 
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
+ // ppt 상 start_process()
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
+
+
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -172,9 +182,23 @@ process_exec (void *f_name) {
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
-
+    char *token, *save_ptr;
+	char *values[100];
+    process_cleanup ();
+	
+	int i = 1;
+    token = strtok_r (f_name, " ", &save_ptr);
+	values[0] = token;
+	while(token != NULL && i <= 100)
+	{
+		token = strtok_r (NULL, " ", &save_ptr);
+		values[i] = token;
+		i++;
+	}
+	
+	argument_stack(values, i, &_if);	
 	/* We first kill the current context */
-	process_cleanup ();
+	
 
 	/* And then load the binary */
 	success = load (file_name, &_if);
@@ -470,6 +494,42 @@ validate_segment (const struct Phdr *phdr, struct file *file) {
 	return true;
 }
 
+void argument_stack(char **parse, int count, void **esp)
+{	
+	int size = 0; 
+	char value_address[count];
+	for(int i = count-1;i >-1; i--)
+	{
+		*esp-= sizeof(parse[i]);
+		size += sizeof(parse[i]);
+		**(char **)esp = parse[i];
+		value_address[i] = &esp;
+	}
+
+	if(size % 8 != 0){
+		int padding = 8 - size%8;
+		*esp -= padding;
+		memset (*esp, 0, padding);  
+	}
+	*esp -= sizeof(char);
+	memset (*esp, 0, sizeof(char));
+
+	for(int i = count-1;i >-1; i--)
+	{	
+
+		*esp -= sizeof(value_address[i]);
+		**(char **)esp = value_address[i];
+	}
+	*esp -= sizeof(count);
+	memset (*esp, count, sizeof(count));
+	*esp -= sizeof(char);
+	memset (*esp, 0, sizeof(char));
+
+		
+}
+
+
+
 #ifndef VM
 /* Codes of this block will be ONLY USED DURING project 2.
  * If you want to implement the function for whole project 2, implement it
@@ -619,7 +679,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
 		upage += PGSIZE;
-	}
+	}frame
 	return true;
 }
 
@@ -636,4 +696,5 @@ setup_stack (struct intr_frame *if_) {
 
 	return success;
 }
+
 #endif /* VM */
