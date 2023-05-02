@@ -1,6 +1,8 @@
 #include <syscall.h>
 #include <stdint.h>
 #include "../syscall-nr.h"
+#include <thread.h>
+#include <filesys.h>
 
 __attribute__((always_inline))
 static __inline int64_t syscall (uint64_t num_, uint64_t a1_, uint64_t a2_,
@@ -72,12 +74,17 @@ void
 halt (void) {
 	syscall0 (SYS_HALT);
 	NOT_REACHED ();
+
+	power_off();
 }
 
 void
 exit (int status) {
 	syscall1 (SYS_EXIT, status);
 	NOT_REACHED ();
+
+	printf("%c :exit(%d)", thread_name(), status);
+	thread_exit();
 }
 
 pid_t
@@ -97,12 +104,19 @@ wait (pid_t pid) {
 
 bool
 create (const char *file, unsigned initial_size) {
-	return syscall2 (SYS_CREATE, file, initial_size);
+	
+	syscall2(SYS_CREATE, file, initial_size);
+
+	bool success = filesys_create(file, initial_size);
+	return success;
 }
 
 bool
 remove (const char *file) {
-	return syscall1 (SYS_REMOVE, file);
+	syscall1 (SYS_REMOVE, file);
+	filesys_remove(file);
+	bool success = filesys_remove(file);
+	return success;
 }
 
 int

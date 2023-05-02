@@ -187,6 +187,7 @@ int process_exec(void *f_name)
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
+	/* We first kill the current context */
 	process_cleanup();
 
 	char *token, *save_ptr;
@@ -202,7 +203,6 @@ int process_exec(void *f_name)
 		i++;
 		values[i] = token;
 	}
-	/* We first kill the current context */
 
 	/* And then load the binary */
 	success = load(file_name, &_if);
@@ -214,7 +214,7 @@ int process_exec(void *f_name)
 	}
 
 	argument_stack(values, i, &_if);
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	palloc_free_page(file_name);
 
