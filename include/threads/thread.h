@@ -7,6 +7,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include <synch.h>
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -130,6 +131,17 @@ struct thread
 	/* Owned by thread.c. */
 	struct intr_frame tf; /* Information for switching */
 	unsigned magic;		  /* Detects stack overflow. */
+
+	/* 준코 user program */
+	struct thread pp_fd;
+	struct list_elem children_elem;
+	struct list children_list;
+
+	bool isload;
+	bool isexit;
+	struct semaphore exit_sema;
+	struct semaphore load_sema;
+	int exit_status;
 };
 
 /* If false (default), use round-robin scheduler.

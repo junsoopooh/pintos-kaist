@@ -108,6 +108,9 @@ create (const char *file, unsigned initial_size) {
 	syscall2(SYS_CREATE, file, initial_size);
 
 	bool success = filesys_create(file, initial_size);
+	struct intr_frame *f = &thread_current()->tf;
+	uint64_t save_regi = &f->R.rax;
+	save_regi = success;
 	return success;
 }
 
@@ -116,22 +119,45 @@ remove (const char *file) {
 	syscall1 (SYS_REMOVE, file);
 	filesys_remove(file);
 	bool success = filesys_remove(file);
+	struct intr_frame *f = &thread_current()->tf;
+	uint64_t save_regi = &f->R.rax;
+	save_regi = success;
 	return success;
 }
 
 int
 open (const char *file) {
-	return syscall1 (SYS_OPEN, file);
+	syscall1 (SYS_OPEN, file);
+	struct file *fd = filesys_open(file);
+	struct intr_frame *f = &thread_current()->tf;
+	uint64_t save_regi = &f->R.rax;
+	if(fd){
+		save_regi = fd;
+		return fd;
+	}
+	else{
+		save_regi = -1;
+		return -1;
+	}
 }
 
 int
 filesize (int fd) {
-	return syscall1 (SYS_FILESIZE, fd);
+	syscall1 (SYS_FILESIZE, fd);
+	off_t size = file_length(fd);
+	struct intr_frame *f = &thread_current()->tf;
+	uint64_t save_regi = &f->R.rax;
+	save_regi = size;
+	return size;
 }
 
 int
 read (int fd, void *buffer, unsigned size) {
-	return syscall3 (SYS_READ, fd, buffer, size);
+	syscall3 (SYS_READ, fd, buffer, size);
+	
+
+	return 
+	
 }
 
 int

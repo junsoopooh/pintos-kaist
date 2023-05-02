@@ -82,12 +82,13 @@ void thread_init(void)
 	list_init(&sleep_list);
 	list_init(&destruction_req);
 
-	min_ticks = INT64_MAX; /*🤔*/
+	min_ticks = INT64_MAX; /**/
 
 	initial_thread = running_thread();
 	init_thread(initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid();
+	/* file descriptor init */
 }
 
 void thread_start(void)
@@ -148,10 +149,21 @@ tid_t thread_create(const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
+	/* project2 프로세스 계층 구조 구현  */
+	// struct thread mother = &thread_current()->pp_fd 
+	/* 준코 어머니를 저장함 */
+	struct thread *curr = thread_current();
+	if( curr != NULL){
+		semaphore_init(&curr->exit_sema, 0);
+		semaphore_init(&curr->load_sema, 0);
+		curr->pp_fd->children_list = &curr->children_elem;
+	}
+
 	thread_unblock(t); // t를 ready list에 추가함.
 
 	test_max_priority(); // 준코 여기 비교, yield 다있으니까
-
+						// 여기는 5월 2일 준코 반갑다!
+			
 	return tid;
 }
 
@@ -320,6 +332,8 @@ init_thread(struct thread *t, const char *name, int priority)
 	t->wait_on_lock = NULL;
 	list_init(&t->donations);
 	/*----------------[project1]-------------------*/
+	list_init(&t->children_list);
+	/*---------------[준코]------------------------*/
 }
 
 static struct thread *
@@ -552,3 +566,13 @@ void test_max_priority(void)
 	}
 }
 /*-------------------------[project 1]-------------------------*/
+
+/*-------------------------[project 2]-------------------------*/
+
+// struct  thread *get_child_process(int pid)
+// {
+
+
+	
+// 	thread_current() -> children_list->
+// };
