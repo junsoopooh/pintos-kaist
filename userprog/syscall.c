@@ -148,3 +148,39 @@ void get_argument(void *rsp, int **arg, int count)
 		rsp = (int64_t *)rsp + 1;
 	}
 }
+
+/* pintos 종료시키는 함수 */
+void halt(void)
+{
+	power_off();
+}
+
+void exit(int status)
+{ // 종료 status를 입력받는다. exit(0)이면 성공, 아님 실패
+	struct thread *cur = thread_current();
+	cur->exit_status = status;
+	printf("%s: exit(%d)\n", cur->name, status);
+	thread_exit(); // 스레드가 죽는다.
+}
+
+bool create(const char *file, unsigned initial_size)
+{
+	check_address(file);
+	return filesys_create(file, initial_size);
+}
+
+bool remove(const char *file)
+{
+	check_address(file);
+	return filesys_remove(file);
+}
+
+int filesize(int fd)
+{
+	struct file *fileobj = find_file_from_fd(fd);
+
+	if (fileobj == NULL)
+		return -1;
+
+	return file_length(fileobj);
+}
