@@ -132,16 +132,20 @@ struct thread
 	struct intr_frame tf; /* Information for switching */
 	unsigned magic;		  /* Detects stack overflow. */
 
-	/* 준코 user program */
-	struct thread* pp_fd;
+	/* 준코's user program */
+	/* parent-children hierachy */
+	// struct thread* pp_fd; 필요없음
 	struct list_elem children_elem;
 	struct list children_list;
 
-	bool isload;
-	bool isexit;
-	struct semaphore exit_sema;
-	struct semaphore load_sema;
+	/* wait system call  */
+	struct semaphore wait_sema;
 	int exit_status;
+
+	/* fork system call */
+	struct intr_frame parent_if;
+	struct semaphore fork_sema;
+	struct semaphore free_sema;
 };
 
 /* If false (default), use round-robin scheduler.
