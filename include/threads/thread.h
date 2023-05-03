@@ -134,18 +134,22 @@ struct thread
 
 	/* 준코's user program */
 	/* parent-children hierachy */
-	// struct thread* pp_fd; 필요없음
+
+	struct thread* parent_pd; // 부모 프로세스의 디스크립터
 	struct list_elem children_elem;
 	struct list children_list;
 
-	/* wait system call  */
+	/* 준코 : 일단 만들어 놓자  */
+	bool isload;
+	bool isexit;
+
 	struct semaphore wait_sema;
 	int exit_status;
 
-	/* fork system call */
+	/* 준코 */
 	struct intr_frame parent_if;
-	struct semaphore fork_sema;
-	struct semaphore free_sema;
+	struct semaphore exit_sema;
+	struct semaphore load_sema;
 };
 
 /* If false (default), use round-robin scheduler.

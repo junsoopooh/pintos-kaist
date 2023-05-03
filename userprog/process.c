@@ -27,10 +27,10 @@ static bool load(const char *file_name, struct intr_frame *if_);
 static void initd(void *f_name);
 static void __do_fork(void *);
 void argument_stack(char **parse, int count, struct intr_frame *_if);
+struct thread *get_child_process(int pid);
 
 /* General process initializer for initd and other process. */
-static void
-process_init(void)
+static void process_init(void)
 {
 	struct thread *current = thread_current();
 }
@@ -42,7 +42,6 @@ process_init(void)
  * Notice that THIS SHOULD BE CALLED ONCE. */
 
 // ppt 상의 process_execute()함수
-
 tid_t process_create_initd(const char *file_name)
 {
 	char *fn_copy;
@@ -206,6 +205,14 @@ int process_exec(void *f_name)
 
 	/* And then load the binary */
 	success = load(file_name, &_if);
+	
+	/* project2 system call */
+	if(success){
+		struct thread *curr = thread_current();
+		struct thread *target = list_entry(&curr->children_elem,struct thread, children_elem);
+		sema_up(&target->wait_sema);
+	}
+	/* out */
 
 	/* If load failed, quit. */
 	if (!success)
@@ -232,15 +239,19 @@ int process_exec(void *f_name)
  *
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
+
+/* project2 system call */
 int process_wait(tid_t child_tid UNUSED)
 {
-	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
-	 * XXX:       to add infinite loop here before
-	 * XXX:       implementing the process_wait. */
-	while (1)
-	{
+	struct thread *child = get_child_process(pid);
+	struct thread *curr = thread_current();
+	if(child = NULL){
+		return -1;
 	}
-	return -1;
+	sema_down(&curr->wait_sema);
+	thread_exit();
+	return &child->status;
+
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -512,6 +523,7 @@ validate_segment(const struct Phdr *phdr, struct file *file)
 	/* It's okay. */
 	return true;
 }
+/*----------------week09 추가 함수--------------------*/
 
 void argument_stack(char **parse, int count, struct intr_frame *_if)
 {
@@ -550,6 +562,29 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 	_if->R.rdi = count;
 	_if->R.rsi = _if->rsp + 8;
 }
+
+struct thread *get_child_process(int pid){
+	struct thread *curr = thread_current();
+	struct list_elem *find = list_begin(&curr->children_list);
+	while(find != NULL){
+		if(list_entry(find,struct thread, children_elem)-> tid = pid){
+			return list_entry(find, struct thread, children_elem);
+		}
+		else{
+			find = list_next(find);
+		}
+	}
+	return NULL;
+}
+/* 준코 */
+void remove_child_process (struct thread *cp)
+{
+	list_remove(&cp->children_elem);
+	free(*cp);
+
+}
+
+/*----------------week09 추가 함수 끝--------------------*/
 
 #ifndef VM
 /* Codes of this block will be ONLY USED DURING project 2.

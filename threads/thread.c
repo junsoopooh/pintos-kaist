@@ -150,14 +150,17 @@ tid_t thread_create(const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 	/* project2 프로세스 계층 구조 구현  */
-	// struct thread mother = &thread_current()->pp_fd 
-	/* 준코 어머니를 저장함 */
 	struct thread *curr = thread_current();
 	if( curr != NULL){
-		semaphore_init(&curr->exit_sema, 0);
-		semaphore_init(&curr->load_sema, 0);
-		curr->pp_fd->children_list = &curr->children_elem;
+		t->parent_pd = curr;
+		sema_init(&curr->exit_sema, 0);
+		sema_init(&curr->load_sema, 0);
+		sema_init(&curr->wait_sema, 0);
 	}
+	/*  94p
+		😡 프로그램이 로드되지 않음
+		😡 프로세스가 종료되지 않음
+		😡자식리스트에 추가		*/
 
 	thread_unblock(t); // t를 ready list에 추가함.
 
@@ -225,6 +228,8 @@ void thread_exit(void)
 #endif
 
 	intr_disable();
+	sema_up(&list_entry(&thread_current()->elem, struct thread, elem)->wait_sema);
+	list_remove (&thread_current()->elem); // elem? all elem? 😡
 	do_schedule(THREAD_DYING);
 	NOT_REACHED();
 }

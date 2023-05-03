@@ -7,6 +7,7 @@
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
+#include "include/lib/user/syscall.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -50,76 +51,76 @@ void syscall_handler(struct intr_frame *f)
 		halt();
 		break;
 	case SYS_EXIT:
-		exit(args[1]);
+		exit(f->R.rdi);
 		break;
 	case SYS_FORK:
-		fork(args[1]);
+		fork(f->R.rdi);
 		break;
 	case SYS_EXEC:
-		exec(args[1]);
+		exec(f->R.rdi);
 		break;
 	case SYS_WAIT:
-		wait(args[1]);
+		wait(f->R.rdi);
 		break;
 	case SYS_CREATE:
-		create(args[1], args[2]);
+		f->R.rax = create(f->R.rdi, f->R.rsi);
 		break;
 	case SYS_REMOVE:
-		remove(args[1]);
+		f->R.rax = remove(f->R.rdi);
 		break;
 	case SYS_OPEN:
-		open(args[1]);
+		open(f->R.rdi);
 		break;
 	case SYS_FILESIZE:
-		filesize(args[1]);
+		f->R.rax = filesize(f->R.rdi);
 		break;
 	case SYS_READ:
-		read(args[1], args[2], args[3]);
+		read(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_WRITE:
-		write(args[1], args[2], args[3]);
+		write(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_SEEK:
-		seek(args[1], args[2]);
+		seek(f->R.rdi, f->R.rsi);
 		break;
 	case SYS_TELL:
-		tell(args[1]);
+		tell(f->R.rdi);
 		break;
 	case SYS_CLOSE:
-		close(args[1]);
+		close(f->R.rdi);
 		break;
 	case SYS_DUP2:
-		dup2(args[1], args[2]);
+		dup2(f->R.rdi, f->R.rsi);
 		break;
 	case SYS_MMAP:
-		mmap(args[1], args[2], args[3], args[4], args[5]);
+		mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
 		break;
 	case SYS_MUNMAP:
-		munmap(args[1]);
+		munmap(f->R.rdi);
 		break;
 	case SYS_CHDIR:
-		chdir(args[1]);
+		chdir(f->R.rdi);
 		break;
 	case SYS_MKDIR:
-		mkdir(args[1]);
+		mkdir(f->R.rdi);
 		break;
 	case SYS_READDIR:
-		readdir(args[1], args[2]);
+		readdir(f->R.rdi, f->R.rsi);
 		break;
 	case SYS_ISDIR:
-		isdir(args[1]);
+		isdir(f->R.rdi);
 		break;
 	case SYS_INUMBER:
-		inumber(args[1]);
+		inumber(f->R.rdi);
 		break;
 	case SYS_SYMLINK:
-		symlink(args[1], args[2]);
+		symlink(f->R.rdi, f->R.rsi);
 		break;
 	case SYS_MOUNT:
-		mount(args[1], args[2], args[3]);
+		mount(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_UMOUNT:
-		umount(args[1]);
+		umount(f->R.rdi);
 		break;
 	default:
 		thread_exit();
@@ -184,3 +185,23 @@ int filesize(int fd)
 
 	return file_length(fileobj);
 }
+
+pid_t exec(const *cmd_line)
+{
+	struct thread *curr = thread_current();
+	tid_t pid = process_create_initd(cmd_line); // cmd_line parsing해서 file_name 추출해서 넣음.
+	 /* sema_down 옛터  */
+	struct thread *child = get_child_process(pid);// 생성된 자식 프로세스의 디스크립터 검색 미구현 😡
+	int result = process_wait(child);// 자식 프로세스의 프로그램 적재 대기😡
+    list_push_back(&curr->children_list,&child->children_elem);
+
+	if (result = 1) // 적재 성공시
+	{
+		return pid;
+	}
+	else{ // 적재 실패시
+		return -1; 
+	}
+}
+
+
