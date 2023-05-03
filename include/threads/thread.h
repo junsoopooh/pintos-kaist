@@ -133,7 +133,7 @@ struct thread
 	unsigned magic;		  /* Detects stack overflow. */
 
 	/* 준코 user program */
-	struct thread pp_fd;
+	struct thread* pp_fd;
 	struct list_elem children_elem;
 	struct list children_list;
 

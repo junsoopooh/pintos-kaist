@@ -70,144 +70,109 @@ static __inline int64_t syscall (uint64_t num_, uint64_t a1_, uint64_t a2_,
 			((uint64_t) ARG3), \
 			((uint64_t) ARG4), \
 			0))
-void
-halt (void) {
-	syscall0 (SYS_HALT);
-	NOT_REACHED ();
 
-	power_off();
+void halt(void)
+{
+	syscall0(SYS_HALT);
+	NOT_REACHED();
 }
 
-void
-exit (int status) {
-	syscall1 (SYS_EXIT, status);
-	NOT_REACHED ();
-
-	printf("%c :exit(%d)", thread_name(), status);
-	thread_exit();
+void exit(int status)
+{
+	syscall1(SYS_EXIT, status);
+	NOT_REACHED();
 }
 
-pid_t
-fork (const char *thread_name){
-	return (pid_t) syscall1 (SYS_FORK, thread_name);
+pid_t fork(const char *thread_name)
+{
+	return (pid_t)syscall1(SYS_FORK, thread_name);
 }
 
-int
-exec (const char *file) {
-	return (pid_t) syscall1 (SYS_EXEC, file);
+int exec(const char *file)
+{
+	return (pid_t)syscall1(SYS_EXEC, file);
 }
 
-int
-wait (pid_t pid) {
-	return syscall1 (SYS_WAIT, pid);
+int wait(pid_t pid)
+{
+	return syscall1(SYS_WAIT, pid);
 }
 
-bool
-create (const char *file, unsigned initial_size) {
-	
-	syscall2(SYS_CREATE, file, initial_size);
-
-	bool success = filesys_create(file, initial_size);
-	struct intr_frame *f = &thread_current()->tf;
-	uint64_t save_regi = &f->R.rax;
-	save_regi = success;
-	return success;
+bool create(const char *file, unsigned initial_size)
+{
+	return syscall2(SYS_CREATE, file, initial_size);
 }
 
-bool
-remove (const char *file) {
-	syscall1 (SYS_REMOVE, file);
-	filesys_remove(file);
-	bool success = filesys_remove(file);
-	struct intr_frame *f = &thread_current()->tf;
-	uint64_t save_regi = &f->R.rax;
-	save_regi = success;
-	return success;
+bool remove(const char *file)
+{
+	return syscall1(SYS_REMOVE, file);
 }
 
-int
-open (const char *file) {
-	syscall1 (SYS_OPEN, file);
-	struct file *fd = filesys_open(file);
-	struct intr_frame *f = &thread_current()->tf;
-	uint64_t save_regi = &f->R.rax;
-	if(fd){
-		save_regi = fd;
-		return fd;
-	}
-	else{
-		save_regi = -1;
-		return -1;
-	}
+int open(const char *file)
+{
+	return syscall1(SYS_OPEN, file);
 }
 
-int
-filesize (int fd) {
-	syscall1 (SYS_FILESIZE, fd);
-	off_t size = file_length(fd);
-	struct intr_frame *f = &thread_current()->tf;
-	uint64_t save_regi = &f->R.rax;
-	save_regi = size;
-	return size;
+int filesize(int fd)
+{
+	return syscall1(SYS_FILESIZE, fd);
 }
 
-int
-read (int fd, void *buffer, unsigned size) {
-	syscall3 (SYS_READ, fd, buffer, size);
-	
-
-	return 
-	
+int read(int fd, void *buffer, unsigned size)
+{
+	return syscall3(SYS_READ, fd, buffer, size);
 }
 
-int
-write (int fd, const void *buffer, unsigned size) {
-	return syscall3 (SYS_WRITE, fd, buffer, size);
+int write(int fd, const void *buffer, unsigned size)
+{
+	return syscall3(SYS_WRITE, fd, buffer, size);
 }
 
-void
-seek (int fd, unsigned position) {
-	syscall2 (SYS_SEEK, fd, position);
+void seek(int fd, unsigned position)
+{
+	syscall2(SYS_SEEK, fd, position);
 }
 
 unsigned
-tell (int fd) {
-	return syscall1 (SYS_TELL, fd);
+tell(int fd)
+{
+	return syscall1(SYS_TELL, fd);
 }
 
-void
-close (int fd) {
-	syscall1 (SYS_CLOSE, fd);
+void close(int fd)
+{
+	syscall1(SYS_CLOSE, fd);
 }
 
-int
-dup2 (int oldfd, int newfd){
-	return syscall2 (SYS_DUP2, oldfd, newfd);
+int dup2(int oldfd, int newfd)
+{
+	return syscall2(SYS_DUP2, oldfd, newfd);
 }
 
 void *
-mmap (void *addr, size_t length, int writable, int fd, off_t offset) {
-	return (void *) syscall5 (SYS_MMAP, addr, length, writable, fd, offset);
+mmap(void *addr, size_t length, int writable, int fd, off_t offset)
+{
+	return (void *)syscall5(SYS_MMAP, addr, length, writable, fd, offset);
 }
 
-void
-munmap (void *addr) {
-	syscall1 (SYS_MUNMAP, addr);
+void munmap(void *addr)
+{
+	syscall1(SYS_MUNMAP, addr);
 }
 
-bool
-chdir (const char *dir) {
-	return syscall1 (SYS_CHDIR, dir);
+bool chdir(const char *dir)
+{
+	return syscall1(SYS_CHDIR, dir);
 }
 
-bool
-mkdir (const char *dir) {
-	return syscall1 (SYS_MKDIR, dir);
+bool mkdir(const char *dir)
+{
+	return syscall1(SYS_MKDIR, dir);
 }
 
-bool
-readdir (int fd, char name[READDIR_MAX_LEN + 1]) {
-	return syscall2 (SYS_READDIR, fd, name);
+bool readdir(int fd, char name[READDIR_MAX_LEN + 1])
+{
+	return syscall2(SYS_READDIR, fd, name);
 }
 
 bool

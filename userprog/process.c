@@ -165,7 +165,7 @@ __do_fork(void *aux)
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
-		do_iret(&if_);
+		do_iret(&if_);  /* user seg 로 이동해야 하는 함수 */
 error:
 	thread_exit();
 }
