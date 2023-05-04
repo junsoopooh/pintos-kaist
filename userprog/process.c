@@ -164,7 +164,7 @@ __do_fork(void *aux)
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
-		do_iret(&if_);  /* user seg 로 이동해야 하는 함수 */
+		do_iret(&if_); /* user seg 로 이동해야 하는 함수 */
 error:
 	thread_exit();
 }
@@ -205,11 +205,12 @@ int process_exec(void *f_name)
 
 	/* And then load the binary */
 	success = load(file_name, &_if);
-	
+
 	/* project2 system call */
-	if(success){
+	if (success)
+	{
 		struct thread *curr = thread_current();
-		struct thread *target = list_entry(&curr->children_elem,struct thread, children_elem);
+		struct thread *target = list_entry(&curr->child_elem, struct thread, child_elem);
 		sema_up(&target->wait_sema);
 	}
 	/* out */
@@ -243,15 +244,17 @@ int process_exec(void *f_name)
 /* project2 system call */
 int process_wait(tid_t child_tid UNUSED)
 {
-	struct thread *child = get_child_process(pid);
+	struct thread *child = get_child_process(child_tid);
 	struct thread *curr = thread_current();
-	if(child = NULL){
+	if (child = NULL)
+	{
 		return -1;
 	}
 	sema_down(&curr->wait_sema);
-	thread_exit();
-	return &child->status;
-
+	// thread_exit();
+	list_remove(&child->child_elem);
+	sema_up(&child->free_sema);
+	return &child->exit_status;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -563,25 +566,29 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 	_if->R.rsi = _if->rsp + 8;
 }
 
-struct thread *get_child_process(int pid){
+/* 완전 맞음 ㅎ... */
+struct thread *get_child_process(int pid)
+{
 	struct thread *curr = thread_current();
 	struct list_elem *find = list_begin(&curr->children_list);
-	while(find != NULL){
-		if(list_entry(find,struct thread, children_elem)-> tid = pid){
-			return list_entry(find, struct thread, children_elem);
+	while (find != NULL)
+	{
+		if (list_entry(find, struct thread, child_elem)->tid = pid)
+		{
+			return list_entry(find, struct thread, child_elem);
 		}
-		else{
+		else
+		{
 			find = list_next(find);
 		}
 	}
 	return NULL;
 }
 /* 준코 */
-void remove_child_process (struct thread *cp)
+void remove_child_process(struct thread *cp)
 {
-	list_remove(&cp->children_elem);
+	list_remove(&cp->child_elem);
 	free(*cp);
-
 }
 
 /*----------------week09 추가 함수 끝--------------------*/

@@ -132,24 +132,24 @@ struct thread
 	struct intr_frame tf; /* Information for switching */
 	unsigned magic;		  /* Detects stack overflow. */
 
-	/* 준코's user program */
+	/*----------------[project2]-------------------*/
 	/* parent-children hierachy */
-
-	struct thread* parent_pd; // 부모 프로세스의 디스크립터
-	struct list_elem children_elem;
+	struct thread *parent_pd; // 부모 프로세스의 디스크립터
+	struct list_elem child_elem;
 	struct list children_list;
 
-	/* 준코 : 일단 만들어 놓자  */
 	bool isload;
 	bool isexit;
 
 	struct semaphore wait_sema;
+	struct semaphore fork_sema;
+	struct semaphore free_sema;
 	int exit_status;
 
-	/* 준코 */
 	struct intr_frame parent_if;
 	struct semaphore exit_sema;
 	struct semaphore load_sema;
+	/*----------------[project2]-------------------*/
 };
 
 /* If false (default), use round-robin scheduler.

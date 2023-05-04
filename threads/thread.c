@@ -151,12 +151,15 @@ tid_t thread_create(const char *name, int priority,
 
 	/* project2 프로세스 계층 구조 구현  */
 	struct thread *curr = thread_current();
-	if( curr != NULL){
-		t->parent_pd = curr;
-		sema_init(&curr->exit_sema, 0);
-		sema_init(&curr->load_sema, 0);
-		sema_init(&curr->wait_sema, 0);
-	}
+	// if (curr != NULL)
+	// {
+	// 	t->parent_pd = curr;
+	// 	sema_init(&curr->exit_sema, 0);
+	// 	sema_init(&curr->load_sema, 0);
+	// 	sema_init(&curr->wait_sema, 0);
+	// }
+	list_push_back(&curr->children_list, &t->child_elem);
+
 	/*  94p
 		😡 프로그램이 로드되지 않음
 		😡 프로세스가 종료되지 않음
@@ -165,8 +168,8 @@ tid_t thread_create(const char *name, int priority,
 	thread_unblock(t); // t를 ready list에 추가함.
 
 	test_max_priority(); // 준코 여기 비교, yield 다있으니까
-						// 여기는 5월 2일 준코 반갑다!
-			
+						 // 여기는 5월 2일 준코 반갑다!
+
 	return tid;
 }
 
@@ -228,8 +231,8 @@ void thread_exit(void)
 #endif
 
 	intr_disable();
-	sema_up(&list_entry(&thread_current()->elem, struct thread, elem)->wait_sema);
-	list_remove (&thread_current()->elem); // elem? all elem? 😡
+	// sema_up(&list_entry(&thread_current()->elem, struct thread, elem)->wait_sema);
+	list_remove(&thread_current()->allelem); // elem? all elem? 😡
 	do_schedule(THREAD_DYING);
 	NOT_REACHED();
 }
@@ -338,6 +341,11 @@ init_thread(struct thread *t, const char *name, int priority)
 	list_init(&t->donations);
 	/*----------------[project1]-------------------*/
 	list_init(&t->children_list);
+
+	sema_init(&t->wait_sema, 0);
+	sema_init(&t->fork_sema, 0);
+	sema_init(&t->free_sema, 0);
+
 	/*---------------[준코]------------------------*/
 }
 
@@ -577,7 +585,5 @@ void test_max_priority(void)
 // struct  thread *get_child_process(int pid)
 // {
 
-
-	
 // 	thread_current() -> children_list->
 // };
