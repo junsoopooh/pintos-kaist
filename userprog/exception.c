@@ -50,7 +50,7 @@ exception_init (void) {
 	intr_register_int (11, 0, INTR_ON, kill, "#NP Segment Not Present");
 	intr_register_int (12, 0, INTR_ON, kill, "#SS Stack Fault Exception");
 	intr_register_int (13, 0, INTR_ON, kill, "#GP General Protection Exception");
-	intr_register_int (16, 0, INTR_ON, kill, "#MF x87 FPU Floating-Point Error");
+	intr_register_int (16, 0, INTfR_ON, kill, "#MF x87 FPU Floating-Point Error");
 	intr_register_int (19, 0, INTR_ON, kill,
 			"#XF SIMD Floating-Point Exception");
 
@@ -139,6 +139,10 @@ page_fault (struct intr_frame *f) {
 	not_present = (f->error_code & PF_P) == 0;
 	write = (f->error_code & PF_W) != 0;
 	user = (f->error_code & PF_U) != 0;
+	if(!not_present || !write || !user)
+	{
+		exit(-1);
+	}
 
 #ifdef VM
 	/* For project 3 and later. */

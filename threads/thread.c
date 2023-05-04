@@ -165,6 +165,13 @@ tid_t thread_create(const char *name, int priority,
 		😡 프로세스가 종료되지 않음
 		😡자식리스트에 추가		*/
 
+	/* 스레드 생성시 File Descriptor 초기화 */
+	t->fdt = palloc_get_page(0);
+	for(int i=0; i<128; i++){
+		t->fdt[i]=NULL;
+	}
+	t->next_fd = 2;
+
 	thread_unblock(t); // t를 ready list에 추가함.
 
 	test_max_priority(); // 준코 여기 비교, yield 다있으니까

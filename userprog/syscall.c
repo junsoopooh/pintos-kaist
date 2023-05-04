@@ -8,6 +8,10 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "include/lib/user/syscall.h"
+#include "filesys.h"
+#include "userprog/process.h"
+#include "devices/input.h"
+#include "lib/kernel/console.c"
 
 void syscall_entry(void);
 void syscall_handler(struct intr_frame *);
@@ -38,6 +42,10 @@ void syscall_init(void)
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			  FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
+	
+	/* project2 */
+	lock_init(&filesys_lock);
+	/* project2 */
 }
 
 /* The main system call interface */
@@ -204,4 +212,65 @@ pid_t exec(const *cmd_line)
 	{ // 적재 실패시
 		return -1;
 	}
+}
+
+int open(const char *file)
+{
+	if(!file)
+	{
+		return -1;
+	}
+
+	filesys_open(file);
+	struct thread *curr = thread_current();
+	curr->fdt[curr->next_fd] = file;
+	return curr->next_fd;
+}
+
+int read(int fd, void *buffer, unsigned size)
+{
+	lock_acquire(&filesys_lock);
+	if(fd)
+	{
+		if (!file_read(process_get_file(fd), buffer, size))
+		{
+			return -1;
+		}
+			return file_read(process_get_file(fd), buffer, size);
+	}
+	else
+	{
+			buffer = input_getc();
+			return sizeof(buffer);
+	}
+}
+
+int write(int fd, void *buffer, unsigned size)
+{
+	lock_acquire(&filesys_lock);
+	if(fd==1)
+	{
+		putbuf(buffer, size);
+		return sizeof(buffer); 
+	}
+	else
+	{
+		file_write(process_get_file(fd), buffer, size);
+		return size; //size? filesize? 😡
+	}
+}
+
+void seek(int fd, unsigned position)
+{
+	file_seek(process_get_file(fd), position);
+}
+
+unsigned tell(int fd)
+{
+	file_tell(process_get_file(fd));
+}
+
+void close(int fd)
+{
+	file_close(process_get_file(fd));
 }

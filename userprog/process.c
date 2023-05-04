@@ -29,8 +29,14 @@ static void __do_fork(void *);
 void argument_stack(char **parse, int count, struct intr_frame *_if);
 struct thread *get_child_process(int pid);
 
-/* General process initializer for initd and other process. */
-static void process_init(void)
+/* project2 */
+int porcess_add_file(struct file *f); 
+struct file *process_get_file(int fd); 
+void process_close_file(int fd);
+/* project2 */
+
+	/* General process initializer for initd and other process. */
+	static void process_init(void)
 {
 	struct thread *current = thread_current();
 }
@@ -261,6 +267,16 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
 	struct thread *curr = thread_current();
+	int index = 2;
+	for(i=2;i<128;i++)
+	{
+		process_close_file(i);
+	}
+	free(curr->fdt);
+	/* close만들고 다시 볼 예정 😡 */
+	
+
+
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
@@ -588,7 +604,33 @@ struct thread *get_child_process(int pid)
 void remove_child_process(struct thread *cp)
 {
 	list_remove(&cp->child_elem);
-	free(*cp);
+	free(cp);
+}
+
+/* 준코 project2  */
+int porcess_add_file(struct file *f)
+{
+	struct thread *curr = thread_current();
+	curr -> fdt[curr->next_fd] = f;
+	curr->next_fd += 1;
+	return curr->next_fd - 1 ;
+}
+
+struct file *process_get_file(int fd)
+{
+	struct thread *curr = thread_current();
+	if(curr -> fdt[fd])
+	{return curr -> fdt[fd];}
+	else{
+		return NULL;
+	} 
+}
+
+void process_close_file(int fd)
+{
+	struct thread *curr = thread_current();
+	// close(curr->fdt[fd]);
+	// curr->fdt[fd] = NULL or 0; 
 }
 
 /*----------------week09 추가 함수 끝--------------------*/
@@ -771,3 +813,5 @@ setup_stack(struct intr_frame *if_)
 }
 
 #endif /* VM */
+
+

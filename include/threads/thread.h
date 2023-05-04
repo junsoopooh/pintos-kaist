@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "threads/interrupt.h"
 #include <synch.h>
+#include <filesys/file.h>
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -40,6 +41,7 @@ void update_next_to_wake(int64_t local_ticks);
 int64_t get_next_to_wakeup(void);
 
 /*----------------[project1]-------------------*/
+
 
 /* A kernel thread or user process.
  *
@@ -149,6 +151,9 @@ struct thread
 	struct intr_frame parent_if;
 	struct semaphore exit_sema;
 	struct semaphore load_sema;
+
+	struct file **fdt;
+	int next_fd;
 	/*----------------[project2]-------------------*/
 };
 
