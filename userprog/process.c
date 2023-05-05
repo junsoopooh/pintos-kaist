@@ -622,20 +622,19 @@ int process_add_file(struct file *f)
 struct file *process_get_file(int fd)
 {
 	struct thread *curr = thread_current();
-	if (curr->fdt[fd])
-	{
-		return curr->fdt[fd];
-	}
-	else
+	if (fd < 0 || fd >= 128 || !(curr->fdt[fd]))
 	{
 		return NULL;
 	}
+	return curr->fdt[fd];
 }
 
 void process_close_file(int fd)
 {
 	struct thread *curr = thread_current();
-	// close(curr->fdt[fd]); 🤔
+	if (fd < 0 || fd >= 128)
+		return;
+
 	curr->fdt[fd] = NULL;
 }
 

@@ -199,23 +199,24 @@ int filesize(int fd)
 	return file_length(fileobj);
 }
 
-pid_t exec(const *cmd_line)
+int exec(const char *cmd_line)
 {
-	struct thread *curr = thread_current();
-	tid_t pid = process_create_initd(cmd_line);	   // cmd_line parsing해서 file_name 추출해서 넣음.
-												   /* sema_down 옛터  */
-	struct thread *child = get_child_process(pid); // 생성된 자식 프로세스의 디스크립터 검색 미구현 😡
-	int result = process_wait(child);			   // 자식 프로세스의 프로그램 적재 대기😡
-	list_push_back(&curr->children_list, &child->child_elem);
+	check_address(cmd_line);
 
-	if (result = 1) // 적재 성공시
-	{
-		return pid;
-	}
-	else
-	{ // 적재 실패시
+	/* 인자로 받은 파일 이름 문자열을 복사하여 이 복사본을 인자로 process_exec() 실행*/
+	int size = strlen(cmd_line) + 1;
+	char *fn_copy = palloc_get_page(0);
+	if (fn_copy == NULL)
+		exit(-1);
+	strlcpy(fn_copy, cmd_line, size);
+
+	if (process_exec(fn_copy) == -1) /* process_exec에서 free해줌 */
 		return -1;
-	}
+
+	/* Caller 프로세스는 do_iret() 후 돌아오지 못한다. */
+	NOT_REACHED();
+
+	return 0; // 이 값은 리턴되지 않는다. 즉, exec()은 오직 에러가 발생했을 때만 리턴한다.
 }
 
 /* 🤔 */
@@ -226,7 +227,7 @@ int open(const char *file)
 	{
 		return -1;
 	}
-	int fd = add_file_to_fdt(fileobj); // 해당 파일을 가리키는 포인터를 fdt에 넣어주고 식별자 리턴
+	int fd = process_add_file(fileobj); // 해당 파일을 가리키는 포인터를 fdt에 넣어주고 식별자 리턴
 
 	// struct thread *curr = thread_current();
 	// curr->fdt[curr->next_fd] = file;
@@ -241,36 +242,89 @@ int open(const char *file)
 /* 이건 다시 생각해봐야 할 것 같아... 힌트) 표준 입력 */
 int read(int fd, void *buffer, unsigned size)
 {
-	lock_acquire(&filesys_lock);
-	if (fd)
+	// 유효한 주소인지부터 체크
+	check_address(buffer);			  // 버퍼 시작 주소 체크
+	check_address(buffer + size - 1); // 버퍼 끝 주소도 유저 영역 내에 있는지 체크
+	unsigned char *buf = buffer;
+	int read_count;
+
+	struct file *fileobj = fd_to_struct_filep(fd);
+
+	if (fileobj == NULL)
 	{
-		if (!file_read(process_get_file(fd), buffer, size))
-		{
-			return -1;
-		}
-		return file_read(process_get_file(fd), buffer, size);
+		return -1;
 	}
+
+	/* STDIN일 때: */
+	if (fd == STDIN_FILENO)
+	{
+		char key;
+		for (int read_count = 0; read_count < size; read_count++)
+		{
+			key = input_getc();
+			*buf++ = key;
+			if (key == '\0')
+			{ // 엔터값
+				break;
+			}
+		}
+	}
+	/* STDOUT일 때: -1 반환 */
+	else if (fd == STDOUT_FILENO)
+	{
+		return -1;
+	}
+
 	else
 	{
-		buffer = input_getc();
-		return sizeof(buffer);
+		lock_acquire(&filesys_lock);
+		read_count = file_read(fileobj, buffer, size); // 파일 읽어들일 동안만 lock 걸어준다.
+		lock_release(&filesys_lock);
 	}
+	return read_count;
 }
 
 /* 이건 다시 생각해봐야 할 것 같아... 힌트) 표준 출력 */
-int write(int fd, void *buffer, unsigned size)
+int write(int fd, const void *buffer, unsigned size)
 {
-	lock_acquire(&filesys_lock);
-	if (fd == 1)
+	check_address(buffer);
+	int write_count;
+	struct thread *cur = thread_current();
+
+	struct file *fileobj = find_file_by_fd(fd);
+	if (fileobj == NULL)
+		return -1;
+
+	if (fileobj == STDOUT)
 	{
-		putbuf(buffer, size);
-		return sizeof(buffer);
+		if (cur->stdout_count == 0)
+		{ /* 얘도 없어도 돌아가긴 한다.*/
+			NOT_REACHED();
+			remove_file_from_fdt(fd);
+			write_count = -1;
+		}
+		else
+		{
+			/* buffer에 있는 데이터를 size byte 만큼 console에 보내 출력하게 한다.
+			출력 중에는 console을 획득한 프로세스만이 console에 쓸 수 있다. */
+			putbuf(buffer, size);
+			write_count = size;
+		}
+	}
+	else if (fileobj == STDIN)
+	{
+		write_count = -1;
 	}
 	else
 	{
-		file_write(process_get_file(fd), buffer, size);
-		return size; // size? filesize? 😡
+		/* 현재 프로세스가 해당 파일에 데이터를 쓰는 동안
+		   다른 프로세스가 그 파일을 쓰면 안 되므로. */
+		lock_acquire(&filesys_lock);
+		write_count = file_write(fileobj, buffer, size);
+		lock_release(&filesys_lock);
 	}
+
+	return write_count; // 출력한 데이터의 byte를 반환한다.
 }
 
 void seek(int fd, unsigned position)
