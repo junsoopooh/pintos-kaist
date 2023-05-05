@@ -17,7 +17,21 @@
 void syscall_entry(void);
 void syscall_handler(struct intr_frame *);
 void check_address(const void *addr);
-void get_argument(void *rsp, int **arg, int count);
+// void get_argument(void *rsp, int **arg, int count);
+
+void halt(void);
+void exit(int status);
+bool create(const char *file, unsigned initial_size);
+bool remove(const char *file);
+int filesize(int fd);
+int exec(const char *cmd_line);
+int open(const char *file);
+int read(int fd, void *buffer, unsigned size);
+int write(int fd, const void *buffer, unsigned size);
+void seek(int fd, unsigned position);
+void close(int fd);
+pid_t fork(const char *thread_name);
+int wait(pid_t pid);
 
 /* System call.
  *
@@ -67,13 +81,16 @@ void syscall_handler(struct intr_frame *f)
 		exit(f->R.rdi);
 		break;
 	case SYS_FORK:
-		fork(f->R.rdi);
+		f->R.rax = fork(f->R.rdi);
 		break;
 	case SYS_EXEC:
-		exec(f->R.rdi);
+		if (exec(f->R.rdi) == -1)
+		{
+			exit(-1);
+		}
 		break;
 	case SYS_WAIT:
-		wait(f->R.rdi);
+		f->R.rax = wait(f->R.rdi);
 		break;
 	case SYS_CREATE:
 		f->R.rax = create(f->R.rdi, f->R.rsi);
@@ -82,22 +99,22 @@ void syscall_handler(struct intr_frame *f)
 		f->R.rax = remove(f->R.rdi);
 		break;
 	case SYS_OPEN:
-		open(f->R.rdi);
+		f->R.rax = open(f->R.rdi);
 		break;
 	case SYS_FILESIZE:
 		f->R.rax = filesize(f->R.rdi);
 		break;
 	case SYS_READ:
-		read(f->R.rdi, f->R.rsi, f->R.rdx);
+		f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_WRITE:
-		write(f->R.rdi, f->R.rsi, f->R.rdx);
+		f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 		break;
 	case SYS_SEEK:
 		seek(f->R.rdi, f->R.rsi);
 		break;
 	case SYS_TELL:
-		tell(f->R.rdi);
+		f->R.rax = tell(f->R.rdi);
 		break;
 	case SYS_CLOSE:
 		close(f->R.rdi);
@@ -145,23 +162,25 @@ void syscall_handler(struct intr_frame *f)
 
 void check_address(const void *addr)
 {
+	struct thread *curr = thread_current();
+
 	/* 주소가 유효하지 않으면 예외 처리 ,주소가 유저 영역이 아니면 예외 처리*/
-	if (addr == NULL || pml4_get_page(&thread_current()->pml4, addr) == NULL || is_kernel_vaddr(addr))
+	if (addr == NULL || pml4_get_page(curr->pml4, addr) == NULL || is_kernel_vaddr(addr))
 	{
 		exit(1);
 	}
 }
 
-void get_argument(void *rsp, int **arg, int count)
-{
-	rsp = (int64_t *)rsp + 2; // 원래 stack pointer에서 2칸(16byte) 올라감 : |argc|"argv"|...
-	for (int i = 0; i < count; i++)
-	{
-		check_address(rsp); // 진교 추가
-		arg[i] = rsp;
-		rsp = (int64_t *)rsp + 1;
-	}
-}
+// void get_argument(void *rsp, int **arg, int count)
+// {
+// 	rsp = (int64_t *)rsp + 2; // 원래 stack pointer에서 2칸(16byte) 올라감 : |argc|"argv"|...
+// 	for (int i = 0; i < count; i++)
+// 	{
+// 		check_address(rsp); // 진교 추가
+// 		arg[i] = rsp;
+// 		rsp = (int64_t *)rsp + 1;
+// 	}
+// }
 
 /* pintos 종료시키는 함수 */
 void halt(void)
@@ -173,20 +192,32 @@ void exit(int status)
 { // 종료 status를 입력받는다. exit(0)이면 성공, 아님 실패
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
-	printf("%s: exit(%d)\n", cur->name, status);
+	printf("%s: exit(%d)\n", thread_name(), status);
 	thread_exit(); // 스레드가 죽는다.
 }
 
 bool create(const char *file, unsigned initial_size)
 {
 	check_address(file);
-	return filesys_create(file, initial_size);
+	if (filesys_create(file, initial_size))
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 bool remove(const char *file)
 {
 	check_address(file);
 	return filesys_remove(file);
+	// if (filesys_remove(file))
+	// {
+	// 	return true;
+	// }
+	// return false;
 }
 
 int filesize(int fd)
@@ -222,7 +253,10 @@ int exec(const char *cmd_line)
 /* 🤔 */
 int open(const char *file)
 {
+	check_address(file);
+	lock_acquire(&filesys_lock);
 	struct file *fileobj = filesys_open(file);
+
 	if (fileobj == NULL)
 	{
 		return -1;
@@ -236,10 +270,11 @@ int open(const char *file)
 	{
 		file_close(fileobj);
 	}
+
+	lock_release(&filesys_lock);
 	return fd;
 }
 
-/* 이건 다시 생각해봐야 할 것 같아... 힌트) 표준 입력 */
 int read(int fd, void *buffer, unsigned size)
 {
 	// 유효한 주소인지부터 체크
@@ -247,8 +282,8 @@ int read(int fd, void *buffer, unsigned size)
 	check_address(buffer + size - 1); // 버퍼 끝 주소도 유저 영역 내에 있는지 체크
 	unsigned char *buf = buffer;
 	int read_count;
-	struct thread *cur = thread_current();
-	struct file *fileobj = cur->fdt[fd];
+
+	struct file *fileobj = process_get_file(fd);
 
 	if (fileobj == NULL)
 	{
@@ -256,7 +291,7 @@ int read(int fd, void *buffer, unsigned size)
 	}
 
 	/* STDIN일 때: */
-	if (fd == 0)
+	if (fileobj == 0)
 	{
 		char key;
 		for (int read_count = 0; read_count < size; read_count++)
@@ -270,7 +305,7 @@ int read(int fd, void *buffer, unsigned size)
 		}
 	}
 	/* STDOUT일 때: -1 반환 */
-	else if (fd == 1)
+	else if (fileobj == 1)
 	{
 		return -1;
 	}
@@ -289,61 +324,58 @@ int write(int fd, const void *buffer, unsigned size)
 {
 	check_address(buffer);
 	int write_count;
-	struct thread *cur = thread_current();
 
 	struct file *fileobj = process_get_file(fd);
-	if (fileobj == NULL)
-		return -1;
 
-	if (fileobj == STDOUT)
+	if (fileobj == NULL)
 	{
-		if (cur->stdout_count == 0)
-		{ /* 얘도 없어도 돌아가긴 한다.*/
-			NOT_REACHED();
-			process_close_file(fd);
-			write_count = -1;
-		}
-		else
-		{
-			/* buffer에 있는 데이터를 size byte 만큼 console에 보내 출력하게 한다.
-			출력 중에는 console을 획득한 프로세스만이 console에 쓸 수 있다. */
-			putbuf(buffer, size);
-			write_count = size;
-		}
+		return -1;
 	}
-	else if (fileobj == STDIN)
+	if (fileobj == 1)
 	{
-		write_count = -1;
+		putbuf(buffer, size);
+		write_count = size;
+	}
+	else if (fileobj == 1)
+	{
+		return -1;
 	}
 	else
 	{
-		/* 현재 프로세스가 해당 파일에 데이터를 쓰는 동안
-		   다른 프로세스가 그 파일을 쓰면 안 되므로. */
+
 		lock_acquire(&filesys_lock);
 		write_count = file_write(fileobj, buffer, size);
 		lock_release(&filesys_lock);
 	}
-
 	return write_count; // 출력한 데이터의 byte를 반환한다.
 }
 
 void seek(int fd, unsigned position)
 {
-	struct file *fileobj = process_get_file(fd);
-	if (fileobj == NULL || fileobj <= 2)
+	if (fd < 2)
+	{
 		return;
+	}
+	struct file *fileobj = process_get_file(fd);
+	// check_address(fileobj);
+	// if (fileobj == NULL)
+	// 	return;
 
 	file_seek(fileobj, position);
 }
 
 unsigned tell(int fd)
 {
+	if (fd < 2)
+	{
+		return;
+	}
 	struct file *fileobj = process_get_file(fd);
+	// check_address(fileobj);
+	// if (fileobj == NULL) /* 조건 빠짐 */
+	// 	return -1;
 
-	if (fileobj == NULL || fileobj <= 2) /* 조건 빠짐 */
-		return -1;
-
-	return file_tell(fileobj);
+	return file_tell(fd);
 }
 
 void close(int fd)
@@ -351,13 +383,22 @@ void close(int fd)
 	struct thread *cur = thread_current();
 	struct file *fileobj = process_get_file(fd);
 
-	if (fileobj == STDIN)
+	// if (fileobj == STDIN)
+	// {
+	// 	cur->stdin_count--;
+	// }
+	// if (fileobj == STDOUT)
+	// {
+	// 	cur->stdout_count--;
+	// }
+
+	if (fd <= 1)
+		return;
+	struct file *file_obj = process_get_file(fd);
+
+	if (file_obj == NULL)
 	{
-		cur->stdin_count--;
-	}
-	if (fileobj == STDOUT)
-	{
-		cur->stdout_count--;
+		return;
 	}
 
 	process_close_file(fd);
