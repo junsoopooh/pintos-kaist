@@ -322,5 +322,5 @@ void close(int fd)
 		cur->stdout_count--;
 	} */
 
-	remove_file_from_fdt(fd);
+	process_close_file(fd);
 }
