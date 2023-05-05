@@ -191,7 +191,7 @@ bool remove(const char *file)
 
 int filesize(int fd)
 {
-	struct file *fileobj = find_file_from_fd(fd);
+	struct file *fileobj = process_get_file(fd);
 
 	if (fileobj == NULL)
 		return -1;
