@@ -362,3 +362,17 @@ void close(int fd)
 
 	process_close_file(fd);
 }
+
+pid_t fork(const char *thread_name)
+{
+	struct thread *curr = thread_current();
+	tid_t result;
+	if (result = process_fork(thread_name, &curr->tf))
+	{
+		return result;
+	}
+	else
+	{
+		return TID_ERROR;
+	}
+}

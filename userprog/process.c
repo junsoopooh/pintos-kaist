@@ -107,22 +107,31 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
 	bool writable;
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
-
+	if (is_kernel_vaddr(parent_page))
+	{
+		return;
+	}
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page(parent->pml4, va);
 
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
 	 *    TODO: NEWPAGE. */
+	palloc_get_multiple(PAL_USER, sizeof(parent_page));
+	/* set result to NEWPAGE*/
 
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
+	// if (is_writable(pte)) {
+	writable = pml4_set_page(parent->pml4, newpage, parent_page, va);
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
 	if (!pml4_set_page(current->pml4, va, newpage, writable))
 	{
 		/* 6. TODO: if fail to insert page, do error handling. */
+		printf("FAIL to insert page!\n");
+		return false;
 	}
 	return true;
 }
@@ -138,12 +147,19 @@ __do_fork(void *aux)
 	struct intr_frame if_;
 	struct thread *parent = (struct thread *)aux;
 	struct thread *current = thread_current();
-	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
+
 	struct intr_frame *parent_if;
+	parent_if = &parent->tf;
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
-	memcpy(&if_, parent_if, sizeof(struct intr_frame));
+	// memcpy(&if_, parent_if, sizeof(struct intr_frame));
+	memcpy(&if_.R.rbx, &parent_if->R.rbx, sizeof(uint64_t));
+	// memcpy(&if_.R.rsp, &parent_if->R.rsp, sizeof(uint64_t));
+	memcpy(&if_.R.rbp, &parent_if->R.rbp, sizeof(uint64_t));
+	memcpy(&if_.R.r12, &parent_if->R.r12, sizeof(uint64_t));
+	memcpy(&if_.R.r13, &parent_if->R.r13, sizeof(uint64_t));
+	memcpy(&if_.R.r14, &parent_if->R.r14, sizeof(uint64_t));
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -160,17 +176,26 @@ __do_fork(void *aux)
 		goto error;
 #endif
 
-	/* TODO: Your code goes here.
-	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
-	 * TODO:       in include/filesys/file.h. Note that parent should not return
-	 * TODO:       from the fork() until this function successfully duplicates
-	 * TODO:       the resources of parent.*/
+	for (int i = 0; i <= 128; i++)
+	{
+		struct file *nfile;
+		if (nfile = file_duplicate(&parent->fdt[i]))
+		{
+			current->fdt[i] = nfile;
+		}
+		else
+		{
+			return TID_ERROR;
+		}
+	}
+	if_.R.rax = 0;
+	return &current->tid;
 
 	process_init();
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
-		do_iret(&if_); /* user seg 로 이동해야 하는 함수 */
+		do_iret(&if_);
 error:
 	thread_exit();
 }
