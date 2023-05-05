@@ -32,6 +32,9 @@ void get_argument(void *rsp, int **arg, int count);
 #define MSR_LSTAR 0xc0000082		/* Long mode SYSCALL target */
 #define MSR_SYSCALL_MASK 0xc0000084 /* Mask for the eflags */
 
+const int STDIN = 1;
+const int STDOUT = 2;
+
 void syscall_init(void)
 {
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48 |
@@ -289,6 +292,15 @@ void close(int fd)
 {
 	struct thread *cur = thread_current();
 	struct file *fileobj = process_get_file(fd);
+
+	if (fileobj == STDIN)
+	{
+		cur->stdin_count--;
+	}
+	if (fileobj == STDOUT)
+	{
+		cur->stdout_count--;
+	}
 
 	process_close_file(fd);
 }
