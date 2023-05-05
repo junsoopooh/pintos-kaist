@@ -242,8 +242,11 @@ void thread_exit(void)
 #endif
 
 	intr_disable();
-	// sema_up(&list_entry(&thread_current()->elem, struct thread, elem)->wait_sema);
-	list_remove(&thread_current()->allelem); // elem? all elem? 😡
+
+	list_remove(&thread_current()->elem);
+	list_remove(&thread_current()->child_elem);
+	list_remove(&thread_current()->donation_elem);
+
 	do_schedule(THREAD_DYING);
 	NOT_REACHED();
 }

@@ -256,7 +256,7 @@ int read(int fd, void *buffer, unsigned size)
 	}
 
 	/* STDIN일 때: */
-	if (fd == STDIN_FILENO)
+	if (fd == 0)
 	{
 		char key;
 		for (int read_count = 0; read_count < size; read_count++)
@@ -270,7 +270,7 @@ int read(int fd, void *buffer, unsigned size)
 		}
 	}
 	/* STDOUT일 때: -1 반환 */
-	else if (fd == STDOUT_FILENO)
+	else if (fd == 1)
 	{
 		return -1;
 	}
@@ -329,10 +329,11 @@ int write(int fd, const void *buffer, unsigned size)
 
 void seek(int fd, unsigned position)
 {
+	struct file *fileobj = process_get_file(fd);
 	if (fileobj == NULL || fileobj <= 2)
 		return;
 
-	file_seek(process_get_file(fd), position);
+	file_seek(fileobj, position);
 }
 
 unsigned tell(int fd)
