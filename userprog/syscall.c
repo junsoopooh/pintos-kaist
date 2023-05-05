@@ -329,6 +329,9 @@ int write(int fd, const void *buffer, unsigned size)
 
 void seek(int fd, unsigned position)
 {
+	if (fileobj == NULL || fileobj <= 2)
+		return;
+
 	file_seek(process_get_file(fd), position);
 }
 
