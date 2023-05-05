@@ -634,16 +634,26 @@ void remove_child_process(struct thread *cp)
 	free(cp);
 }
 
-/* 준코 project2  */
 /* 🤔 */
 int process_add_file(struct file *f)
 {
 	struct thread *curr = thread_current();
-	curr->fdt[curr->next_fd] = f;
-	curr->next_fd += 1;
-	return curr->next_fd - 1;
-}
+	int findIdx = curr->next_fd; /* 탐색 포인터 */
+	ASSERT(f != NULL);
 
+	while (findIdx < 128 && curr->fdt[findIdx])
+	{
+		findIdx++;
+	}
+	if (findIdx >= 128)
+	{
+		return -1;
+	}
+	curr->next_fd = findIdx;
+	curr->fdt[findIdx] = f;
+
+	return findIdx;
+}
 struct file *process_get_file(int fd)
 {
 	struct thread *curr = thread_current();

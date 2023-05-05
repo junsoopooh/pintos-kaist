@@ -50,7 +50,7 @@ void exception_init(void)
 	intr_register_int(11, 0, INTR_ON, kill, "#NP Segment Not Present");
 	intr_register_int(12, 0, INTR_ON, kill, "#SS Stack Fault Exception");
 	intr_register_int(13, 0, INTR_ON, kill, "#GP General Protection Exception");
-	intr_register_int(16, 0, INTfR_ON, kill, "#MF x87 FPU Floating-Point Error");
+	intr_register_int(16, 0, INTR_ON, kill, "#MF x87 FPU Floating-Point Error");
 	intr_register_int(19, 0, INTR_ON, kill,
 					  "#XF SIMD Floating-Point Exception");
 

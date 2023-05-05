@@ -8,7 +8,7 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "include/lib/user/syscall.h"
-#include "filesys.h"
+#include "filesys/filesys.h"
 #include "userprog/process.h"
 #include "devices/input.h"
 #include "lib/kernel/console.c"
@@ -102,39 +102,39 @@ void syscall_handler(struct intr_frame *f)
 	case SYS_CLOSE:
 		close(f->R.rdi);
 		break;
-	case SYS_DUP2:
-		dup2(f->R.rdi, f->R.rsi);
-		break;
-	case SYS_MMAP:
-		mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
-		break;
-	case SYS_MUNMAP:
-		munmap(f->R.rdi);
-		break;
-	case SYS_CHDIR:
-		chdir(f->R.rdi);
-		break;
-	case SYS_MKDIR:
-		mkdir(f->R.rdi);
-		break;
-	case SYS_READDIR:
-		readdir(f->R.rdi, f->R.rsi);
-		break;
-	case SYS_ISDIR:
-		isdir(f->R.rdi);
-		break;
-	case SYS_INUMBER:
-		inumber(f->R.rdi);
-		break;
-	case SYS_SYMLINK:
-		symlink(f->R.rdi, f->R.rsi);
-		break;
-	case SYS_MOUNT:
-		mount(f->R.rdi, f->R.rsi, f->R.rdx);
-		break;
-	case SYS_UMOUNT:
-		umount(f->R.rdi);
-		break;
+	// case SYS_DUP2:
+	// 	dup2(f->R.rdi, f->R.rsi);
+	// 	break;
+	// case SYS_MMAP:
+	// 	mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+	// 	break;
+	// case SYS_MUNMAP:
+	// 	munmap(f->R.rdi);
+	// 	break;
+	// case SYS_CHDIR:
+	// 	chdir(f->R.rdi);
+	// 	break;
+	// case SYS_MKDIR:
+	// 	mkdir(f->R.rdi);
+	// 	break;
+	// case SYS_READDIR:
+	// 	readdir(f->R.rdi, f->R.rsi);
+	// 	break;
+	// case SYS_ISDIR:
+	// 	isdir(f->R.rdi);
+	// 	break;
+	// case SYS_INUMBER:
+	// 	inumber(f->R.rdi);
+	// 	break;
+	// case SYS_SYMLINK:
+	// 	symlink(f->R.rdi, f->R.rsi);
+	// 	break;
+	// case SYS_MOUNT:
+	// 	mount(f->R.rdi, f->R.rsi, f->R.rdx);
+	// 	break;
+	// case SYS_UMOUNT:
+	// 	umount(f->R.rdi);
+	// 	break;
 	default:
 		thread_exit();
 	}
@@ -247,8 +247,8 @@ int read(int fd, void *buffer, unsigned size)
 	check_address(buffer + size - 1); // 버퍼 끝 주소도 유저 영역 내에 있는지 체크
 	unsigned char *buf = buffer;
 	int read_count;
-
-	struct file *fileobj = fd_to_struct_filep(fd);
+	struct thread *cur = thread_current();
+	struct file *fileobj = cur->fdt[fd];
 
 	if (fileobj == NULL)
 	{
@@ -291,7 +291,7 @@ int write(int fd, const void *buffer, unsigned size)
 	int write_count;
 	struct thread *cur = thread_current();
 
-	struct file *fileobj = find_file_by_fd(fd);
+	struct file *fileobj = process_get_file(fd);
 	if (fileobj == NULL)
 		return -1;
 
@@ -300,7 +300,7 @@ int write(int fd, const void *buffer, unsigned size)
 		if (cur->stdout_count == 0)
 		{ /* 얘도 없어도 돌아가긴 한다.*/
 			NOT_REACHED();
-			remove_file_from_fdt(fd);
+			process_close_file(fd);
 			write_count = -1;
 		}
 		else
@@ -366,13 +366,11 @@ void close(int fd)
 pid_t fork(const char *thread_name)
 {
 	struct thread *curr = thread_current();
-	tid_t result;
-	if (result = process_fork(thread_name, &curr->tf))
-	{
-		return result;
-	}
-	else
-	{
-		return TID_ERROR;
-	}
+
+	return process_fork(thread_name, &curr->tf);
+}
+
+int wait(pid_t pid)
+{
+	return process_wait(pid);
 }
