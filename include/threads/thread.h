@@ -42,7 +42,6 @@ int64_t get_next_to_wakeup(void);
 
 /*----------------[project1]-------------------*/
 
-
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -154,6 +153,12 @@ struct thread
 
 	struct file **fdt;
 	int next_fd;
+	/* 🤔 */
+	struct file *running; // 현재 스레드가 사용 중인 파일(load하고 있는 파일)
+
+	int stdin_count;  // 이 프로세스의 표준 입력 파일이 열려있는지를 확인하는 flag
+	int stdout_count; // 이 프로세스의 표준 출력 파일이 열려있는지를 확인하는 flag
+
 	/*----------------[project2]-------------------*/
 };
 

@@ -42,10 +42,33 @@ void syscall_init(void)
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			  FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
-	
+
 	/* project2 */
 	lock_init(&filesys_lock);
 	/* project2 */
+}
+
+/* 🤔 */
+struct lock
+{
+	struct thread *holder;		/* Thread holding lock (for debugging). */
+	struct semaphore semaphore; /* Binary semaphore controlling access. */
+};
+
+void lock_init(struct lock *lock)
+{
+	ASSERT(lock != NULL);
+
+	lock->holder = NULL;
+	sema_init(&lock->semaphore, 1);
+}
+
+void sema_init(struct semaphore *sema, unsigned value)
+{
+	ASSERT(sema != NULL);
+
+	sema->value = value;
+	list_init(&sema->waiters);
 }
 
 /* The main system call interface */
@@ -214,49 +237,58 @@ pid_t exec(const *cmd_line)
 	}
 }
 
+/* 🤔 */
 int open(const char *file)
 {
-	if(!file)
+	struct file *fileobj = filesys_open(file);
+	if (fileobj == NULL)
 	{
 		return -1;
 	}
+	int fd = add_file_to_fdt(fileobj); // 해당 파일을 가리키는 포인터를 fdt에 넣어주고 식별자 리턴
 
-	filesys_open(file);
-	struct thread *curr = thread_current();
-	curr->fdt[curr->next_fd] = file;
-	return curr->next_fd;
+	// struct thread *curr = thread_current();
+	// curr->fdt[curr->next_fd] = file;
+
+	if (fd == -1)
+	{
+		file_close(fileobj);
+	}
+	return fd;
 }
 
+/* 이건 다시 생각해봐야 할 것 같아... 힌트) 표준 입력 */
 int read(int fd, void *buffer, unsigned size)
 {
 	lock_acquire(&filesys_lock);
-	if(fd)
+	if (fd)
 	{
 		if (!file_read(process_get_file(fd), buffer, size))
 		{
 			return -1;
 		}
-			return file_read(process_get_file(fd), buffer, size);
+		return file_read(process_get_file(fd), buffer, size);
 	}
 	else
 	{
-			buffer = input_getc();
-			return sizeof(buffer);
+		buffer = input_getc();
+		return sizeof(buffer);
 	}
 }
 
+/* 이건 다시 생각해봐야 할 것 같아... 힌트) 표준 출력 */
 int write(int fd, void *buffer, unsigned size)
 {
 	lock_acquire(&filesys_lock);
-	if(fd==1)
+	if (fd == 1)
 	{
 		putbuf(buffer, size);
-		return sizeof(buffer); 
+		return sizeof(buffer);
 	}
 	else
 	{
 		file_write(process_get_file(fd), buffer, size);
-		return size; //size? filesize? 😡
+		return size; // size? filesize? 😡
 	}
 }
 
@@ -267,10 +299,28 @@ void seek(int fd, unsigned position)
 
 unsigned tell(int fd)
 {
-	file_tell(process_get_file(fd));
+	struct file *fileobj = process_get_file(fd);
+
+	if (fileobj == NULL || fileobj <= 2) /* 조건 빠짐 */
+		return -1;
+
+	file_tell(fileobj);
 }
 
 void close(int fd)
 {
-	file_close(process_get_file(fd));
+	struct thread *cur = thread_current();
+	struct file *fileobj = process_get_file(fd);
+
+	/* 추가해야 함 🤔
+	if (fileobj == STDIN)
+	{
+		cur->stdin_count--;
+	}
+	if (fileobj == STDOUT)
+	{
+		cur->stdout_count--;
+	} */
+
+	remove_file_from_fdt(fd);
 }

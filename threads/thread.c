@@ -133,9 +133,20 @@ tid_t thread_create(const char *name, int priority,
 
 	ASSERT(function != NULL);
 
-	t = palloc_get_page(PAL_ZERO);
-	if (t == NULL)
+	t->fdt = palloc_get_multiple(PAL_ZERO, 3); /* 🤔 */
+	if (t->fdt == NULL)
 		return TID_ERROR;
+
+	/* 스레드 생성시 File Descriptor 초기화 */
+	// t->fdt = palloc_get_page(0);
+	// for (int i = 0; i < 128; i++)
+	// {
+	// 	t->fdt[i] = NULL;
+	// }
+	t->next_fd = 2;
+	/* 🤔 */
+	t->fdt[0] = 1; // 의미가 있는 숫자는 아니다. 다만 해당 인덱스(식별자)를 사용하는 파일이 존재하므로 넣어준 것.
+	t->fdt[1] = 2; // NULL 만들지 않으려고. 원래는 해당 파일을 가리키는 포인터가 들어가야함
 
 	init_thread(t, name, priority);
 	tid = t->tid = allocate_tid();
@@ -164,13 +175,6 @@ tid_t thread_create(const char *name, int priority,
 		😡 프로그램이 로드되지 않음
 		😡 프로세스가 종료되지 않음
 		😡자식리스트에 추가		*/
-
-	/* 스레드 생성시 File Descriptor 초기화 */
-	t->fdt = palloc_get_page(0);
-	for(int i=0; i<128; i++){
-		t->fdt[i]=NULL;
-	}
-	t->next_fd = 2;
 
 	thread_unblock(t); // t를 ready list에 추가함.
 
