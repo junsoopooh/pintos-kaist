@@ -12,6 +12,7 @@
 #include "userprog/process.h"
 #include "devices/input.h"
 #include "lib/kernel/console.c"
+#include "threads/synch.h"
 
 void syscall_entry(void);
 void syscall_handler(struct intr_frame *);
@@ -46,29 +47,6 @@ void syscall_init(void)
 	/* project2 */
 	lock_init(&filesys_lock);
 	/* project2 */
-}
-
-/* 🤔 */
-struct lock
-{
-	struct thread *holder;		/* Thread holding lock (for debugging). */
-	struct semaphore semaphore; /* Binary semaphore controlling access. */
-};
-
-void lock_init(struct lock *lock)
-{
-	ASSERT(lock != NULL);
-
-	lock->holder = NULL;
-	sema_init(&lock->semaphore, 1);
-}
-
-void sema_init(struct semaphore *sema, unsigned value)
-{
-	ASSERT(sema != NULL);
-
-	sema->value = value;
-	list_init(&sema->waiters);
 }
 
 /* The main system call interface */
@@ -304,23 +282,13 @@ unsigned tell(int fd)
 	if (fileobj == NULL || fileobj <= 2) /* 조건 빠짐 */
 		return -1;
 
-	file_tell(fileobj);
+	return file_tell(fileobj);
 }
 
 void close(int fd)
 {
 	struct thread *cur = thread_current();
 	struct file *fileobj = process_get_file(fd);
-
-	/* 추가해야 함 🤔
-	if (fileobj == STDIN)
-	{
-		cur->stdin_count--;
-	}
-	if (fileobj == STDOUT)
-	{
-		cur->stdout_count--;
-	} */
 
 	process_close_file(fd);
 }
