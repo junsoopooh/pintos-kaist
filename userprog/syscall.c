@@ -11,7 +11,7 @@
 #include "filesys/filesys.h"
 #include "userprog/process.h"
 #include "devices/input.h"
-#include "lib/kernel/console.c"
+// #include "lib/kernel/console.c"
 #include "threads/synch.h"
 
 void syscall_entry(void);
