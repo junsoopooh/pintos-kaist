@@ -8,15 +8,18 @@ Calibrating timer...  130,867,200 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 102 sector (51 kB) disk, model "QEMU HARDDISK", serial "QM00003"
-Formatting file system...Kernel PANIC at ../../threads/thread.c:238 in thread_yield(): assertion `!intr_context()' failed.
-Call stack: 0x8004217ef5 0x8004207299 0x8004207ecf 0x8004209fc0 0x80042144bc 0x8004208db8 0x80042091d6 0x800420745d.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 55 ticks
-Thread: 30 idle ticks, 25 kernel ticks, 0 user ticks
-hd0:0: 0 reads, 0 writes
-hd0:1: 0 reads, 0 writes
-hd1:0: 0 reads, 0 writes
-Console: 1028 characters output
-Key
+Formatting file system...done.
+Boot complete.
+Putting 'args-none' into the file system...
+Executing 'args-none':
+Page fault at 0x188: not present error reading page in kernel context.
+main: exit(-1)
+Page fault at 0: not present error writing page in kernel context.
+main: exit(-1)
+Page fault at 0: not present error writing page in kernel context.
+main: exit(-1)
+Page fault at 0: not present error writing page in kernel context.
+main: exit(-1)
+Page fault at 0: not present error writing page in kernel context.
+main: exit(-1)
+Interrupt 0
