@@ -315,7 +315,7 @@ int process_wait(tid_t child_tid UNUSED)
 	{
 		return -1;
 	}
-	sema_down(&curr->wait_sema);
+	sema_down(&child->wait_sema);
 	// thread_exit();
 	int exit_status = child->exit_status;
 	list_remove(&child->child_elem);
@@ -332,16 +332,10 @@ void process_exit(void)
 		close(i);
 	}
 	palloc_free_multiple(curr->fdt, FDT_PAGES);
-	/* 🤔 */
 	file_close(curr->running);
+
 	sema_up(&curr->wait_sema);
 	sema_down(&curr->free_sema);
-	process_cleanup();
-
-	/* TODO: Your code goes here.
-	 * TODO: Implement process termination message (see
-	 * TODO: project2/process_termination.html).
-	 * TODO: We recommend you to implement process resource cleanup here. */
 
 	process_cleanup();
 }
