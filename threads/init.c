@@ -1,5 +1,3 @@
-#define USERPROG
-
 #include "threads/init.h"
 #include <console.h>
 #include <debug.h>
@@ -197,7 +195,7 @@ read_command_line(void)
 	/* Print kernel command line. */
 	printf("Kernel command line:\n");
 	printf("(args) begin\n");
-	printf("(args) argc = %d\n",argc);
+	printf("(args) argc = %d\n", argc);
 	for (i = 0; i < argc; i++)
 		if (strchr(argv[i], ' ') == NULL)
 			printf("(args) values[%d] = %s\n", i, argv[i]);

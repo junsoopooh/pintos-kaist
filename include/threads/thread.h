@@ -1,5 +1,3 @@
-#define USERPROG
-
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
 
@@ -8,10 +6,12 @@
 #include <stdint.h>
 #include "threads/interrupt.h"
 #include "threads/synch.h"
-#include <filesys/file.h>
 #ifdef VM
 #include "vm/vm.h"
 #endif
+
+#define FDT_PAGES 3
+#define FDCOUNT_LIMIT FDT_PAGES * (1 << 9)
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -119,19 +119,7 @@ struct thread
 	struct lock *wait_on_lock;		// 해당 스레드가 대기하고 있는 lock자료구조 주소 저장
 	struct list donations;			// multiple donation 을 고려하기 위해사용
 	struct list_elem donation_elem; // multiple donation 을 고려하기 위해사용
-									/*----------------[project1]-------------------*/
-#ifdef USERPROG
-	/* Owned by userprog/process.c. */
-	uint64_t *pml4; /* Page map level 4 */
-#endif
-#ifdef VM
-	/* Table for whole virtual memory owned by thread. */
-	struct supplemental_page_table spt;
-#endif
-
-	/* Owned by thread.c. */
-	struct intr_frame tf; /* Information for switching */
-	unsigned magic;		  /* Detects stack overflow. */
+	/*----------------[project1]-------------------*/
 
 	/*----------------[project2]-------------------*/
 	/* parent-children hierachy */
@@ -158,6 +146,18 @@ struct thread
 	int stdin_count;
 	int stdout_count;
 	/*----------------[project2]-------------------*/
+#ifdef USERPROG
+	/* Owned by userprog/process.c. */
+	uint64_t *pml4; /* Page map level 4 */
+#endif
+#ifdef VM
+	/* Table for whole virtual memory owned by thread. */
+	struct supplemental_page_table spt;
+#endif
+
+	/* Owned by thread.c. */
+	struct intr_frame tf; /* Information for switching */
+	unsigned magic;		  /* Detects stack overflow. */
 };
 
 /* If false (default), use round-robin scheduler.

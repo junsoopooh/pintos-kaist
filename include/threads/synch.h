@@ -57,4 +57,6 @@ void cond_broadcast(struct condition *, struct lock *);
 void donate_priority(void);
 void remove_with_lock(struct lock *lock);
 void refresh_priority(void);
+// bool sem_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+// bool donate_priority_less(struct list_elem *a, struct list_elem *b, void *aux UNUSED);
 /*-------------------------[project 1]-------------------------*/
