@@ -32,8 +32,8 @@ void sema_down(struct semaphore *sema)
 	old_level = intr_disable();
 	while (sema->value == 0) /* sema에 접근할 수 없을 때 */
 	{
-		list_insert_ordered(&sema->waiters, &thread_current()->elem, priority_less, NULL); /* 접근 권한이 생기기를 기다리는 스레드를 waiters에 추가 */
-		thread_block();																	   /* 해당 스레드 block */
+		list_insert_ordered(&sema->waiters, &thread_current()->elem, sem_priority_less, NULL); /* 접근 권한이 생기기를 기다리는 스레드를 waiters에 추가 */
+		thread_block();																		   /* 해당 스레드 block */
 	}
 	sema->value--;
 	intr_set_level(old_level);
@@ -130,7 +130,7 @@ void lock_acquire(struct lock *lock)
 	{
 		cur_t->wait_on_lock = lock;
 		list_insert_ordered(&lock->holder->donations, &cur_t->donation_elem,
-							priority_less, 0);
+							donate_priority_less, 0);
 		donate_priority(); /* 우선순위 조정 */
 	}
 	sema_down(&lock->semaphore);

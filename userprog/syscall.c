@@ -74,9 +74,6 @@ void syscall_init(void)
 /* The main system call interface */
 void syscall_handler(struct intr_frame *f)
 {
-	/* 포인터 레지스터인 rsp 주소 확인 필요*/
-	check_address(&f->rsp);
-
 	switch (f->R.rax) // rax값이 들어가야함.
 	{
 	case SYS_HALT:
@@ -167,10 +164,9 @@ void check_address(const void *addr)
 {
 	struct thread *curr = thread_current();
 
-	/* 주소가 유효하지 않으면 예외 처리 ,주소가 유저 영역이 아니면 예외 처리*/
-	if (addr == NULL || pml4_get_page(curr->pml4, addr) == NULL || is_kernel_vaddr(addr))
+	if (is_kernel_vaddr(addr) || addr == NULL || pml4_get_page(curr->pml4, addr) == NULL)
 	{
-		exit(1);
+		exit(-1);
 	}
 }
 
@@ -215,12 +211,12 @@ bool create(const char *file, unsigned initial_size)
 bool remove(const char *file)
 {
 	check_address(file);
-	return filesys_remove(file);
-	// if (filesys_remove(file))
-	// {
-	// 	return true;
-	// }
-	// return false;
+
+	if (filesys_remove(file))
+	{
+		return true;
+	}
+	return false;
 }
 
 int filesize(int fd)
@@ -293,6 +289,11 @@ int read(int fd, void *buffer, unsigned size)
 		return -1;
 	}
 
+	if (size == 0)
+	{
+		return 0;
+	}
+
 	/* STDIN일 때: */
 	if (fileobj == STDIN)
 	{
@@ -328,6 +329,11 @@ int write(int fd, const void *buffer, unsigned size)
 	int write_count;
 
 	struct file *fileobj = process_get_file(fd);
+
+	if (fd == 0)
+	{
+		return 0;
+	}
 
 	if (fileobj == NULL)
 	{
@@ -391,7 +397,11 @@ void close(int fd)
 		return;
 	}
 
-	process_close_file(fd);
+	lock_acquire(&filesys_lock);
+	file_close(fileobj);
+	lock_release(&filesys_lock);
+
+	thread_current()->fdt[fd] = NULL;
 }
 
 tid_t fork(const char *thread_name, struct intr_frame *f)
@@ -427,7 +437,7 @@ int process_add_file(struct file *f)
 
 struct file *process_get_file(int fd)
 {
-	if (fd < 0 || fd >= FDCOUNT_LIMIT)
+	if (fd < 0 || fd >= FDCOUNT_LIMIT || fd == NULL)
 	{
 		return NULL;
 	}
