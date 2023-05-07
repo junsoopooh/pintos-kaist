@@ -122,18 +122,35 @@ void lock_acquire(struct lock *lock)
 	ASSERT(!intr_context());
 	ASSERT(!lock_held_by_current_thread(lock));
 
-	struct thread *cur_t = thread_current();
+	// ******************************LINE ADDED****************************** //
+	// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+	// LOCK이 Holder를 가지고 있는지. 즉, LOCK이 점유되고 있는지 Check.
+	// 다른 스레드가 LOCK을 점유하고 있으면 자신의 Priority를 Donation 하여
+	// 현재 LOCK을 점유하는 스레드가 우선적으로 LOCK을 반환하도록 한다.
+	// !CAUTION : lock_acquire 함수 내에서는 thread_current()는 LOCK을 얻고자 하는 스레드를 current로 취급한다.
+	//            또한, lock_acquire 함수를 호출 할 수 있었다는 것은 지금 lock->holder 스레드 보다 priority가 높다는 것을 의미
+	//            따라서 우선 순위의 대소 비교를 할 필요가 없다.
 
-	if (lock->holder != NULL) /* lock을 가지고 있는 스레드가 있으면 */
+	/*if (lock -> holder != NULL){*/
+	if (lock->holder)
 	{
-		cur_t->wait_on_lock = lock;
-		list_insert_ordered(&lock->holder->donations, &cur_t->donation_elem,
-							&donate_priority_less, 0);
-		donate_priority(); /* 우선순위 조정 */
+		thread_current()->wait_on_lock = lock; // 현재 스레드가 LOCK을 기다리고 있다고 알려준다.
+		// donations 리스트에 넣어줄때는 FIFO(기부 순서)가 아닌 priority순으로 정렬하여 삽입
+		// -> donor들이 나갈때도 priority 순으로 나가기 때문에.
+
+		list_insert_ordered(&lock->holder->donations, &thread_current()->donation_elem, &donate_priority_less, NULL);
+		/*list_push_back(&lock->holder->donations, &curr->donation_elem);*/
+		donate_priority();
 	}
+	// *************************ADDED LINE ENDS HERE************************* //
+
 	sema_down(&lock->semaphore);
-	cur_t->wait_on_lock = NULL;		 /* 이제 thread_current가 기다리는 락 없어짐 */
-	lock->holder = thread_current(); /* thread_current가 lock 획득 */
+	lock->holder = thread_current();
+
+	// ******************************LINE ADDED****************************** //
+	// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+	thread_current()->wait_on_lock = NULL;
+	// *************************ADDED LINE ENDS HERE************************* //
 }
 
 bool lock_try_acquire(struct lock *lock)
@@ -155,10 +172,12 @@ void lock_release(struct lock *lock)
 	ASSERT(lock != NULL);
 	ASSERT(lock_held_by_current_thread(lock));
 
-	lock->holder = NULL; /* lock의 holder 초기화 */
 	remove_with_lock(lock);
 	refresh_priority();
+	lock->holder = NULL; /* lock의 holder 초기화 */
+
 	sema_up(&lock->semaphore);
+
 }
 
 bool lock_held_by_current_thread(const struct lock *lock)
