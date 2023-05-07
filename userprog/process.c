@@ -310,12 +310,11 @@ int process_exec(void *f_name)
 int process_wait(tid_t child_tid UNUSED)
 {
 	struct thread *child = get_child_process(child_tid);
-	struct thread *curr = thread_current();
-	if (child = NULL)
+	if (child == NULL)
 	{
 		return -1;
 	}
-	sema_down(&curr->wait_sema);
+	sema_down(&child->wait_sema);
 	// thread_exit();
 	int exit_status = child->exit_status;
 	list_remove(&child->child_elem);
@@ -334,16 +333,16 @@ void process_exit(void)
 	palloc_free_multiple(curr->fdt, FDT_PAGES);
 	/* 🤔 */
 	file_close(curr->running);
+
 	sema_up(&curr->wait_sema);
 	sema_down(&curr->free_sema);
+	
 	process_cleanup();
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
-	process_cleanup();
 }
 
 /* Free the current process's resources. */
@@ -626,7 +625,7 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 	while (_if->rsp % 8 != 0)
 	{
 		_if->rsp--;
-		*(uint8_t *)(_if->rsp) = 0;
+		memset(_if->rsp, 0, sizeof(uint8_t));
 	}
 
 	for (int i = count; i >= 0; i--)

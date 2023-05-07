@@ -12,7 +12,6 @@
 #include "filesys/filesys.h"
 #include "userprog/process.h"
 #include "devices/input.h"
-#include "threads/synch.h"
 #include "threads/palloc.h"
 
 void syscall_entry(void);
@@ -85,8 +84,11 @@ void syscall_handler(struct intr_frame *f)
 	case SYS_FORK:
 		f->R.rax = fork(f->R.rdi, f);
 		break;
-	case SYS_EXEC:
-		f->R.rax = exec(f->R.rdi);
+	case SYS_EXEC: // Switch current process.
+		if (exec(f->R.rdi) == -1)
+		{
+			exit(-1);
+		}
 		break;
 	case SYS_WAIT:
 		f->R.rax = wait(f->R.rdi);
@@ -192,6 +194,7 @@ void exit(int status)
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
 	printf("%s: exit(%d)\n", thread_name(), status);
+
 	thread_exit(); // 스레드가 죽는다.
 }
 
@@ -397,11 +400,12 @@ void close(int fd)
 		return;
 	}
 
-	lock_acquire(&filesys_lock);
-	file_close(fileobj);
-	lock_release(&filesys_lock);
+	// lock_acquire(&filesys_lock);
+	// file_close(fileobj);
+	// lock_release(&filesys_lock);
 
-	thread_current()->fdt[fd] = NULL;
+	// thread_current()->fdt[fd] = NULL;
+	process_close_file(fd);
 }
 
 tid_t fork(const char *thread_name, struct intr_frame *f)
