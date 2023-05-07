@@ -427,19 +427,20 @@ int wait(tid_t pid)
 int process_add_file(struct file *f)
 {
 	struct thread *curr = thread_current();
-	int findIdx = curr->next_fd; /* 탐색 포인터 */
-	// ASSERT(f != NULL);
+	struct file **fdt = curr->fdt;
 
-	while (findIdx < FDCOUNT_LIMIT && curr->fdt[findIdx])
+	// Find open spot from the front
+	while (curr->next_fd < FDCOUNT_LIMIT && fdt[curr->next_fd])
 	{
-		findIdx++;
+		curr->next_fd++;
 	}
-	if (findIdx >= FDCOUNT_LIMIT)
-	{
+
+	// error - fd table full
+	if (curr->next_fd >= FDCOUNT_LIMIT)
 		return -1;
-	}
-	curr->fdt[findIdx] = f;
-	return findIdx;
+
+	fdt[curr->next_fd] = f;
+	return curr->next_fd;
 }
 
 struct file *process_get_file(int fd)

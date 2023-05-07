@@ -129,9 +129,9 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
     }
     /* 2. Resolve VA from the parent's page map level 4. */
     parent_page = pml4_get_page(parent->pml4, va);
+
     if (parent_page == NULL)
     {
-        printf("[fork-duplicate] failed to fetch page for user vaddr 'va'\n"); // #ifdef DEBUG
         return false;
     }
 
@@ -140,7 +140,6 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
     newpage = palloc_get_page(PAL_USER | PAL_ZERO);
     if (newpage == NULL)
     {
-        printf("[fork-duplicate] failed to palloc new page\n"); // #ifdef DEBUG
         return false;
     } /* set result to NEWPAGE*/
 
@@ -166,15 +165,13 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
  * Hint) parent->tf does not hold the userland context of the process.
  *       That is, you are required to pass second argument of process_fork to
  *       this function. */
-static void
-__do_fork(void *aux)
+static void __do_fork(void *aux)
 {
     struct intr_frame if_;
     struct thread *parent = (struct thread *)aux;
     struct thread *current = thread_current();
 
-    struct intr_frame *parent_if;
-    parent_if = &parent->parent_if;
+    struct intr_frame *parent_if = &parent->parent_if;
     bool succ = true;
 
     /* 1. Read the cpu context to local stack. */
