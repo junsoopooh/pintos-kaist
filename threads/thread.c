@@ -180,12 +180,9 @@ tid_t thread_create(const char *name, int priority,
 
 	thread_unblock(t); // t를 ready list에 추가함.
 
-	// test_max_priority(); // 준코 여기 비교, yield 다있으니까
+	test_max_priority(); // 준코 여기 비교, yield 다있으니까
 						 // 여기는 5월 2일 준코 반갑다!
-	if (priority_less(&t->elem, &curr->elem, 0))
-	{
-		thread_yield();
-	}
+
 	return tid;
 }
 
@@ -364,7 +361,7 @@ init_thread(struct thread *t, const char *name, int priority)
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
 	sema_init(&t->free_sema, 0);
-
+	t->running = NULL;
 	t->exit_status = 0;
 	/*---------------[준코]------------------------*/
 }
