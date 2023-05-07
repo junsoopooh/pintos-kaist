@@ -1,3 +1,5 @@
+#define USERPROG
+
 #include "threads/thread.h"
 #include <debug.h>
 #include <stddef.h>
@@ -80,12 +82,13 @@ void thread_init(void)
 	list_init(&sleep_list);
 	list_init(&destruction_req);
 
-	min_ticks = INT64_MAX; /*🤔*/
+	min_ticks = INT64_MAX; /**/
 
 	initial_thread = running_thread();
 	init_thread(initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid();
+	/* file descriptor init */
 }
 
 void thread_start(void)
@@ -127,15 +130,31 @@ tid_t thread_create(const char *name, int priority,
 {
 	struct thread *t;
 	tid_t tid;
-	
+
 	ASSERT(function != NULL);
 
-	t = palloc_get_page(PAL_ZERO); /* 페이지할당*/
+	t = palloc_get_page(PAL_ZERO);
 	if (t == NULL)
 		return TID_ERROR;
 
-	init_thread(t, name, priority); /* thread 구조체 초기화*/
-	tid = t->tid = allocate_tid();	/* tid할당*/
+	init_thread(t, name, priority);
+	tid = t->tid = allocate_tid();
+
+	struct thread *curr = thread_current();
+	list_push_back(&curr->children_list, &t->child_elem);
+
+	t->fdt = palloc_get_multiple(PAL_ZERO, FDT_PAGES);
+	if (t->fdt == NULL)
+		return TID_ERROR;
+
+	t->next_fd = 2;
+	/* 🤔 */
+	t->fdt[0] = 1; // 의미가 있는 숫자는 아니다. 다만 해당 인덱스(식별자)를 사용하는 파일이 존재하므로 넣어준 것.
+	t->fdt[1] = 2; // NULL 만들지 않으려고. 원래는 해당 파일을 가리키는 포인터가 들어가야함
+
+	// count 초기화
+	t->stdin_count = 1;
+	t->stdout_count = 1;
 
 	t->tf.rip = (uintptr_t)kernel_thread;
 	t->tf.R.rdi = (uint64_t)function;
@@ -146,10 +165,28 @@ tid_t thread_create(const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
+	/* project2 프로세스 계층 구조 구현  */
+	// if (curr != NULL)
+	// {
+	// 	t->parent_pd = curr;
+	// 	sema_init(&curr->exit_sema, 0);
+	// 	sema_init(&curr->load_sema, 0);
+	// 	sema_init(&curr->wait_sema, 0);
+	// }
+
+	/*  94p
+		😡 프로그램이 로드되지 않음
+		😡 프로세스가 종료되지 않음
+		😡자식리스트에 추가		*/
+
 	thread_unblock(t); // t를 ready list에 추가함.
 
-	test_max_priority(); // 준코 여기 비교, yield 다있으니까
-
+	// test_max_priority(); // 준코 여기 비교, yield 다있으니까
+						 // 여기는 5월 2일 준코 반갑다!
+	if (priority_less(&t->elem, &curr->elem, 0))
+	{
+		thread_yield();
+	}
 	return tid;
 }
 
@@ -211,6 +248,11 @@ void thread_exit(void)
 #endif
 
 	intr_disable();
+
+	list_remove(&thread_current()->elem);
+	list_remove(&thread_current()->child_elem);
+	list_remove(&thread_current()->donation_elem);
+
 	do_schedule(THREAD_DYING);
 	NOT_REACHED();
 }
@@ -318,6 +360,14 @@ init_thread(struct thread *t, const char *name, int priority)
 	t->wait_on_lock = NULL;
 	list_init(&t->donations);
 	/*----------------[project1]-------------------*/
+	list_init(&t->children_list);
+
+	sema_init(&t->wait_sema, 0);
+	sema_init(&t->fork_sema, 0);
+	sema_init(&t->free_sema, 0);
+
+	t->exit_status = 0;
+	/*---------------[준코]------------------------*/
 }
 
 static struct thread *
@@ -537,7 +587,7 @@ bool priority_less(const struct list_elem *a, const struct list_elem *b,
 
 void test_max_priority(void)
 {
-	if (list_empty(&ready_list))
+	if (list_empty(&ready_list) || intr_context())
 	{
 		return;
 	}
@@ -550,3 +600,11 @@ void test_max_priority(void)
 	}
 }
 /*-------------------------[project 1]-------------------------*/
+
+/*-------------------------[project 2]-------------------------*/
+
+// struct  thread *get_child_process(int pid)
+// {
+
+// 	thread_current() -> children_list->
+// };

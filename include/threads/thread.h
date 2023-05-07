@@ -1,3 +1,5 @@
+#define USERPROG
+
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
 
@@ -5,6 +7,8 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
+#include <filesys/file.h>
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -111,11 +115,11 @@ struct thread
 
 	/*----------------[project1]-------------------*/
 	/* priority donaion 관련 element 추가 */
-	int init_priority;					// donation이후 우선순위를 초기화하기 위해 초기값 저장
-	struct lock *wait_on_lock;			// 해당 스레드가 대기하고 있는 lock자료구조 주소 저장
-	struct list donations;				// multiple donation 을 고려하기 위해사용
-	struct list_elem donation_elem;		// multiple donation 을 고려하기 위해사용
-	/*----------------[project1]-------------------*/
+	int init_priority;				// donation이후 우선순위를 초기화하기 위해 초기값 저장
+	struct lock *wait_on_lock;		// 해당 스레드가 대기하고 있는 lock자료구조 주소 저장
+	struct list donations;			// multiple donation 을 고려하기 위해사용
+	struct list_elem donation_elem; // multiple donation 을 고려하기 위해사용
+									/*----------------[project1]-------------------*/
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4; /* Page map level 4 */
@@ -128,6 +132,32 @@ struct thread
 	/* Owned by thread.c. */
 	struct intr_frame tf; /* Information for switching */
 	unsigned magic;		  /* Detects stack overflow. */
+
+	/*----------------[project2]-------------------*/
+	/* parent-children hierachy */
+	struct thread *parent_pd; // 부모 프로세스의 디스크립터
+	struct list_elem child_elem;
+	struct list children_list;
+
+	bool isload;
+	bool isexit;
+
+	struct semaphore wait_sema;
+	struct semaphore fork_sema;
+	struct semaphore free_sema;
+	int exit_status;
+
+	struct intr_frame parent_if;
+	struct semaphore exit_sema;
+	struct semaphore load_sema;
+
+	struct file **fdt;
+	int next_fd;
+	/* 🤔 */
+	struct file *running; // 현재 스레드가 사용 중인 파일(load하고 있는 파일)
+	int stdin_count;
+	int stdout_count;
+	/*----------------[project2]-------------------*/
 };
 
 /* If false (default), use round-robin scheduler.
