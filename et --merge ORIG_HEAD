@@ -1,0 +1,137 @@
+[33mb6ffae6[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m HEAD@{0}: pull: Fast-forward
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{1}: checkout: moving from revert-6-week09/jinkyo to master
+[33m9cfce6a[m[33m ([m[1;32mweek09/jinkyo[m[33m, [m[1;32mrevert-6-week09/jinkyo[m[33m)[m HEAD@{2}: reset: moving to 9cfce6aae9bb100c7289af0f14970d256a11ce94
+[33m6fd151a[m[33m ([m[1;31morigin/revert-6-week09/jinkyo[m[33m)[m HEAD@{3}: checkout: moving from fix-syscall to revert-6-week09/jinkyo
+[33ma8741be[m[33m ([m[1;32mfix-syscall[m[33m)[m HEAD@{4}: reset: moving to HEAD
+[33ma8741be[m[33m ([m[1;32mfix-syscall[m[33m)[m HEAD@{5}: commit: fix: 3 of 95 tests failed. (before deny)
+[33me3927c5[m HEAD@{6}: pull: Fast-forward
+[33m4a9dacf[m[33m ([m[1;32mrev_syscall[m[33m)[m HEAD@{7}: checkout: moving from rev_syscall to fix-syscall
+[33m4a9dacf[m[33m ([m[1;32mrev_syscall[m[33m)[m HEAD@{8}: checkout: moving from revive_syscall to rev_syscall
+[33m4a9dacf[m[33m ([m[1;32mrev_syscall[m[33m)[m HEAD@{9}: checkout: moving from fix-syscall to revive_syscall
+[33m4a9dacf[m[33m ([m[1;32mrev_syscall[m[33m)[m HEAD@{10}: checkout: moving from week09/jinkyo to fix-syscall
+[33m9cfce6a[m[33m ([m[1;32mweek09/jinkyo[m[33m, [m[1;32mrevert-6-week09/jinkyo[m[33m)[m HEAD@{11}: reset: moving to HEAD
+[33m9cfce6a[m[33m ([m[1;32mweek09/jinkyo[m[33m, [m[1;32mrevert-6-week09/jinkyo[m[33m)[m HEAD@{12}: commit: fixing: only work thread, not urg,syscall
+[33m0d477a3[m HEAD@{13}: commit: threads ok/userprog intr_context()
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{14}: checkout: moving from master to week09/jinkyo
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{15}: reset: moving to HEAD
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{16}: checkout: moving from 0505jinkyo to master
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{17}: checkout: moving from master to 0505jinkyo
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{18}: reset: moving to HEAD
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{19}: checkout: moving from master to master
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{20}: checkout: moving from 0505jinkyo to master
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{21}: pull origin master: Fast-forward
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{22}: checkout: moving from master to 0505jinkyo
+[33m6626e0c[m[33m ([m[1;32m0505jinkyo[m[33m)[m HEAD@{23}: pull: Fast-forward
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{24}: reset: moving to HEAD
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{25}: checkout: moving from 0505jinkyo to master
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{26}: checkout: moving from master to 0505jinkyo
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{27}: checkout: moving from 0505jinkyo to master
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{28}: checkout: moving from master to 0505jinkyo
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{29}: checkout: moving from f702176241f14591996a9e23e51d6758e97a054b to master
+[33mf702176[m HEAD@{30}: checkout: moving from master to f702176241f14591996a9e23e51d6758e97a054b
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{31}: checkout: moving from week09/jinkyo to master
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{32}: reset: moving to HEAD
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{33}: checkout: moving from user_jinkyo to week09/jinkyo
+[33m2883371[m[33m ([m[1;31morigin/user_jinkyo[m[33m)[m HEAD@{34}: reset: moving to HEAD
+[33m2883371[m[33m ([m[1;31morigin/user_jinkyo[m[33m)[m HEAD@{35}: checkout: moving from master to user_jinkyo
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{36}: reset: moving to HEAD
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{37}: checkout: moving from 05jinkyo to master
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{38}: pull origin master: Fast-forward
+[33md519407[m HEAD@{39}: checkout: moving from master to 05jinkyo
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{40}: checkout: moving from 05jinkyo to master
+[33md519407[m HEAD@{41}: checkout: moving from master to 05jinkyo
+[33m37dd190[m[33m ([m[1;31morigin/0505jinkyo[m[33m)[m HEAD@{42}: pull: Fast-forward
+[33md519407[m HEAD@{43}: checkout: moving from 05jinkyo to master
+[33md519407[m HEAD@{44}: pull origin master: Fast-forward
+[33md7b22cf[m[33m ([m[1;31morigin/05jinkyo[m[33m)[m HEAD@{45}: checkout: moving from master to 05jinkyo
+[33md519407[m HEAD@{46}: checkout: moving from 05jinkyo to master
+[33md7b22cf[m[33m ([m[1;31morigin/05jinkyo[m[33m)[m HEAD@{47}: checkout: moving from master to 05jinkyo
+[33md519407[m HEAD@{48}: pull: Fast-forward
+[33md7b22cf[m[33m ([m[1;31morigin/05jinkyo[m[33m)[m HEAD@{49}: checkout: moving from 05jinkyo to master
+[33md7b22cf[m[33m ([m[1;31morigin/05jinkyo[m[33m)[m HEAD@{50}: checkout: moving from master to 05jinkyo
+[33md7b22cf[m[33m ([m[1;31morigin/05jinkyo[m[33m)[m HEAD@{51}: checkout: moving from 230505jinkyo to master
+[33m6db619a[m[33m ([m[1;31morigin/230505jinkyo[m[33m)[m HEAD@{52}: checkout: moving from master to 230505jinkyo
+[33md7b22cf[m[33m ([m[1;31morigin/05jinkyo[m[33m)[m HEAD@{53}: pull: Fast-forward
+[33m6db619a[m[33m ([m[1;31morigin/230505jinkyo[m[33m)[m HEAD@{54}: checkout: moving from master to master
+[33m6db619a[m[33m ([m[1;31morigin/230505jinkyo[m[33m)[m HEAD@{55}: reset: moving to HEAD
+[33m6db619a[m[33m ([m[1;31morigin/230505jinkyo[m[33m)[m HEAD@{56}: checkout: moving from 230505jinkyo to master
+[33m6db619a[m[33m ([m[1;31morigin/230505jinkyo[m[33m)[m HEAD@{57}: checkout: moving from master to 230505jinkyo
+[33m6db619a[m[33m ([m[1;31morigin/230505jinkyo[m[33m)[m HEAD@{58}: pull: Fast-forward
+[33m933b05f[m HEAD@{59}: pull: Fast-forward
+[33ma7a6723[m HEAD@{60}: pull: Fast-forward
+[33m93276c7[m HEAD@{61}: checkout: moving from file_descriptor_jk to master
+[33m3e4be5b[m[33m ([m[1;31morigin/file_descriptor_jk[m[33m)[m HEAD@{62}: commit: 23.05.05
+[33m93276c7[m HEAD@{63}: checkout: moving from master to file_descriptor_jk
+[33m93276c7[m HEAD@{64}: commit: make syscalls not fork
+[33m3660e4d[m HEAD@{65}: pull: Fast-forward
+[33mb54d83d[m HEAD@{66}: commit: feat: parent-children systemcall
+[33m424fb56[m HEAD@{67}: pull: Fast-forward
+[33md4c5ce4[m HEAD@{68}: checkout: moving from user_jinkyo to master
+[33m2883371[m[33m ([m[1;31morigin/user_jinkyo[m[33m)[m HEAD@{69}: commit: fix: system call
+[33m497a71f[m HEAD@{70}: commit: fix: syscall_handler
+[33md4c5ce4[m HEAD@{71}: checkout: moving from master to user_jinkyo
+[33md4c5ce4[m HEAD@{72}: commit: mother save, getchildprocess
+[33m8d46914[m HEAD@{73}: commit: userprog 1st upload
+[33mf0f4b61[m HEAD@{74}: pull: Fast-forward
+[33m4d4d224[m HEAD@{75}: checkout: moving from jinkyo9 to master
+[33m7fa6166[m[33m ([m[1;31morigin/jinkyo9[m[33m)[m HEAD@{76}: commit: feat: week09 argument passing
+[33m7fb0183[m HEAD@{77}: commit: feat: fix & not working
+[33m3125af2[m HEAD@{78}: reset: moving to origin/jinkyo9
+[33m3125af2[m HEAD@{79}: checkout: moving from master to jinkyo9
+[33m4d4d224[m HEAD@{80}: checkout: moving from jinkyo9 to master
+[33m3125af2[m HEAD@{81}: commit: feat: fix but not working
+[33m4d4d224[m HEAD@{82}: reset: moving to HEAD
+[33m4d4d224[m HEAD@{83}: checkout: moving from master to jinkyo9
+[33m4d4d224[m HEAD@{84}: checkout: moving from jinkyo to master
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{85}: checkout: moving from week09/jinkyo to jinkyo
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{86}: reset: moving to origin/week09/jinkyo
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{87}: checkout: moving from master to week09/jinkyo
+[33m4d4d224[m HEAD@{88}: checkout: moving from week09/jinkyo to master
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{89}: reset: moving to origin/week09/jinkyo
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{90}: checkout: moving from master to week09/jinkyo
+[33m4d4d224[m HEAD@{91}: reset: moving to HEAD
+[33m4d4d224[m HEAD@{92}: checkout: moving from week09/jinkyo to master
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{93}: checkout: moving from master to week09/jinkyo
+[33m4d4d224[m HEAD@{94}: reset: moving to HEAD
+[33m4d4d224[m HEAD@{95}: pull: Fast-forward
+[33m1ff753b[m HEAD@{96}: reset: moving to HEAD
+[33m1ff753b[m HEAD@{97}: pull: Fast-forward
+[33m84177ff[m HEAD@{98}: reset: moving to HEAD
+[33m84177ff[m HEAD@{99}: pull: Fast-forward
+[33md82752f[m HEAD@{100}: checkout: moving from week09/jinkyo to master
+[33m6fe5d8a[m[33m ([m[1;31morigin/jinkyo[m[33m)[m HEAD@{101}: commit: fisrt push
+[33md82752f[m HEAD@{102}: checkout: moving from master to week09/jinkyo
+[33md82752f[m HEAD@{103}: pull: Fast-forward
+[33m4c53a75[m HEAD@{104}: pull: Fast-forward
+[33m4210b1d[m HEAD@{105}: pull: Fast-forward
+[33mc14a4e7[m HEAD@{106}: pull: Fast-forward
+[33m64dcc2a[m HEAD@{107}: checkout: moving from donation to master
+[33mae48be5[m HEAD@{108}: reset: moving to HEAD
+[33mae48be5[m HEAD@{109}: commit: feat: first code
+[33m64dcc2a[m HEAD@{110}: checkout: moving from master to donation
+[33m64dcc2a[m HEAD@{111}: commit: fix: 주석 바꿈
+[33me452807[m HEAD@{112}: commit: fix: sema synch2
+[33m4182af3[m HEAD@{113}: commit: feat: synch
+[33meca993a[m HEAD@{114}: commit: feat: syncronization
+[33m07ceec5[m HEAD@{115}: pull: Fast-forward
+[33m6204fd3[m HEAD@{116}: reset: moving to HEAD
+[33m6204fd3[m HEAD@{117}: pull: Fast-forward
+[33m887df48[m HEAD@{118}: commit: destroy: all, fail
+[33m50569e8[m HEAD@{119}: commit: fix: 2차 수정
+[33m58b15c7[m HEAD@{120}: commit: fix: 1차 수정(yield 사용)
+[33mb7074b0[m HEAD@{121}: pull: Fast-forward
+[33ma2e0e18[m HEAD@{122}: reset: moving to HEAD
+[33ma2e0e18[m HEAD@{123}: checkout: moving from week08/JinkyoJB to master
+[33m68903b3[m[33m ([m[1;31morigin/week08/JinkyoJB[m[33m)[m HEAD@{124}: commit: feat: priority scheduler
+[33ma2e0e18[m HEAD@{125}: reset: moving to origin/master
+[33md5fbab2[m HEAD@{126}: checkout: moving from master to week08/JinkyoJB
+[33ma2e0e18[m HEAD@{127}: commit: fix: final alarm clock
+[33mf90065e[m HEAD@{128}: commit: alarm clock real final
+[33m725a3b1[m HEAD@{129}: checkout: moving from junsu to master
+[33mf378f49[m HEAD@{130}: checkout: moving from master to junsu
+[33m725a3b1[m HEAD@{131}: reset: moving to HEAD
+[33m725a3b1[m HEAD@{132}: checkout: moving from junsu to master
+[33mf378f49[m HEAD@{133}: checkout: moving from master to junsu
+[33m725a3b1[m HEAD@{134}: reset: moving to HEAD
+[33m725a3b1[m HEAD@{135}: checkout: moving from gh-pages to master
+[33m4d3c48e[m[33m ([m[1;31morigin/gh-pages[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mgh-pages[m[33m)[m HEAD@{136}: clone: from https://github.com/junsoopooh/pintos-kaist.git

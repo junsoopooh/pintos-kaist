@@ -7,17 +7,16 @@
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
-#include "include/lib/user/syscall.h"
+/*-------------------------[project 2]-------------------------*/
+// #include "include/lib/user/syscall.h"
 #include "filesys/filesys.h"
 #include "userprog/process.h"
 #include "devices/input.h"
-// #include "lib/kernel/console.c"
-#include "threads/synch.h"
+#include "threads/palloc.h"
 
 void syscall_entry(void);
 void syscall_handler(struct intr_frame *);
 void check_address(const void *addr);
-// void get_argument(void *rsp, int **arg, int count);
 
 void halt(void);
 void exit(int status);
@@ -30,8 +29,13 @@ int read(int fd, void *buffer, unsigned size);
 int write(int fd, const void *buffer, unsigned size);
 void seek(int fd, unsigned position);
 void close(int fd);
-pid_t fork(const char *thread_name);
-int wait(pid_t pid);
+tid_t fork(const char *thread_name, struct intr_frame *f);
+int wait(tid_t pid);
+unsigned tell(int fd);
+
+struct file *process_get_file(int fd);
+void process_close_file(int fd);
+/*-------------------------[project 2]-------------------------*/
 
 /* System call.
  *
@@ -69,9 +73,6 @@ void syscall_init(void)
 /* The main system call interface */
 void syscall_handler(struct intr_frame *f)
 {
-	/* 포인터 레지스터인 rsp 주소 확인 필요*/
-	check_address(&f->rsp);
-
 	switch (f->R.rax) // rax값이 들어가야함.
 	{
 	case SYS_HALT:
@@ -81,9 +82,9 @@ void syscall_handler(struct intr_frame *f)
 		exit(f->R.rdi);
 		break;
 	case SYS_FORK:
-		f->R.rax = fork(f->R.rdi);
+		f->R.rax = fork(f->R.rdi, f);
 		break;
-	case SYS_EXEC:
+	case SYS_EXEC: // Switch current process.
 		if (exec(f->R.rdi) == -1)
 		{
 			exit(-1);
@@ -153,21 +154,21 @@ void syscall_handler(struct intr_frame *f)
 	// 	umount(f->R.rdi);
 	// 	break;
 	default:
-		thread_exit();
+		exit(-1);
+		break;
 	}
 
-	printf("system call!\n");
-	thread_exit();
+	// printf("system call!\n");
+	// thread_exit();
 }
 
 void check_address(const void *addr)
 {
 	struct thread *curr = thread_current();
 
-	/* 주소가 유효하지 않으면 예외 처리 ,주소가 유저 영역이 아니면 예외 처리*/
-	if (addr == NULL || pml4_get_page(curr->pml4, addr) == NULL || is_kernel_vaddr(addr))
+	if (is_kernel_vaddr(addr) || addr == NULL || pml4_get_page(curr->pml4, addr) == NULL)
 	{
-		exit(1);
+		exit(-1);
 	}
 }
 
@@ -212,12 +213,12 @@ bool create(const char *file, unsigned initial_size)
 bool remove(const char *file)
 {
 	check_address(file);
-	return filesys_remove(file);
-	// if (filesys_remove(file))
-	// {
-	// 	return true;
-	// }
-	// return false;
+
+	if (filesys_remove(file))
+	{
+		return true;
+	}
+	return false;
 }
 
 int filesize(int fd)
@@ -236,7 +237,7 @@ int exec(const char *cmd_line)
 
 	/* 인자로 받은 파일 이름 문자열을 복사하여 이 복사본을 인자로 process_exec() 실행*/
 	int size = strlen(cmd_line) + 1;
-	char *fn_copy = palloc_get_page(0);
+	char *fn_copy = palloc_get_page(PAL_ZERO);
 	if (fn_copy == NULL)
 		exit(-1);
 	strlcpy(fn_copy, cmd_line, size);
@@ -290,8 +291,13 @@ int read(int fd, void *buffer, unsigned size)
 		return -1;
 	}
 
+	if (size == 0)
+	{
+		return 0;
+	}
+
 	/* STDIN일 때: */
-	if (fileobj == 0)
+	if (fileobj == STDIN)
 	{
 		char key;
 		for (int read_count = 0; read_count < size; read_count++)
@@ -305,7 +311,7 @@ int read(int fd, void *buffer, unsigned size)
 		}
 	}
 	/* STDOUT일 때: -1 반환 */
-	else if (fileobj == 1)
+	else if (fileobj == STDOUT)
 	{
 		return -1;
 	}
@@ -319,7 +325,6 @@ int read(int fd, void *buffer, unsigned size)
 	return read_count;
 }
 
-/* 이건 다시 생각해봐야 할 것 같아... 힌트) 표준 출력 */
 int write(int fd, const void *buffer, unsigned size)
 {
 	check_address(buffer);
@@ -327,11 +332,16 @@ int write(int fd, const void *buffer, unsigned size)
 
 	struct file *fileobj = process_get_file(fd);
 
+	if (fd == 0)
+	{
+		return 0;
+	}
+
 	if (fileobj == NULL)
 	{
 		return -1;
 	}
-	if (fileobj == 1)
+	if (fileobj == STDOUT)
 	{
 		putbuf(buffer, size);
 		write_count = size;
@@ -352,11 +362,11 @@ int write(int fd, const void *buffer, unsigned size)
 
 void seek(int fd, unsigned position)
 {
+	struct file *fileobj = process_get_file(fd);
 	if (fd < 2)
 	{
 		return;
 	}
-	struct file *fileobj = process_get_file(fd);
 	// check_address(fileobj);
 	// if (fileobj == NULL)
 	// 	return;
@@ -371,47 +381,82 @@ unsigned tell(int fd)
 		return;
 	}
 	struct file *fileobj = process_get_file(fd);
+	if (fd < 2)
+	{
+		return;
+	}
 	// check_address(fileobj);
 	// if (fileobj == NULL) /* 조건 빠짐 */
 	// 	return -1;
 
-	return file_tell(fd);
+	return file_tell(fileobj);
 }
 
 void close(int fd)
 {
-	struct thread *cur = thread_current();
-	struct file *fileobj = process_get_file(fd);
-
-	// if (fileobj == STDIN)
-	// {
-	// 	cur->stdin_count--;
-	// }
-	// if (fileobj == STDOUT)
-	// {
-	// 	cur->stdout_count--;
-	// }
-
 	if (fd <= 1)
 		return;
-	struct file *file_obj = process_get_file(fd);
+	struct file *fileobj = process_get_file(fd);
 
-	if (file_obj == NULL)
+	if (fileobj == NULL)
 	{
 		return;
 	}
 
+	// lock_acquire(&filesys_lock);
+	// file_close(fileobj);
+	// lock_release(&filesys_lock);
+
+	// thread_current()->fdt[fd] = NULL;
 	process_close_file(fd);
 }
 
-pid_t fork(const char *thread_name)
+tid_t fork(const char *thread_name, struct intr_frame *f)
 {
-	struct thread *curr = thread_current();
-
-	return process_fork(thread_name, &curr->tf);
+	// check_address(thread_name);
+	return process_fork(thread_name, f);
 }
 
-int wait(pid_t pid)
+int wait(tid_t pid)
 {
 	return process_wait(pid);
+}
+
+/* 준코 project2  */
+/* 🤔 */
+int process_add_file(struct file *f)
+{
+	struct thread *curr = thread_current();
+	int findIdx = curr->next_fd; /* 탐색 포인터 */
+	// ASSERT(f != NULL);
+
+	while (findIdx < FDCOUNT_LIMIT && curr->fdt[findIdx])
+	{
+		findIdx++;
+	}
+	if (findIdx >= FDCOUNT_LIMIT)
+	{
+		return -1;
+	}
+	curr->fdt[findIdx] = f;
+	return findIdx;
+}
+
+struct file *process_get_file(int fd)
+{
+	if (fd < 0 || fd >= FDCOUNT_LIMIT || fd == NULL)
+	{
+		return NULL;
+	}
+	struct thread *curr = thread_current();
+	return curr->fdt[fd];
+}
+
+void process_close_file(int fd)
+{
+	struct thread *curr = thread_current();
+	if (fd < 0 || fd >= FDCOUNT_LIMIT)
+		return;
+
+	curr->fdt[fd] = NULL;
 }

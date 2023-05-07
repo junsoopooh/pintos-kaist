@@ -108,6 +108,25 @@ tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
 		return TID_ERROR;
 
 	return tid;
+	struct thread *curr = thread_current();
+	memcpy(&curr->parent_if, if_, sizeof(struct intr_frame));
+
+	tid_t tid = thread_create(name, PRI_DEFAULT, __do_fork, curr);
+	/*return thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());*/
+
+	if (tid == TID_ERROR)
+	{
+		return TID_ERROR;
+	}
+
+	struct thread *child = get_child_process(tid);
+
+	sema_down(&child->fork_sema);
+
+	if (child->exit_status == -1)
+		return TID_ERROR;
+
+	return tid;
 }
 
 #ifndef VM
@@ -201,13 +220,13 @@ __do_fork(void *aux)
 	if (!pml4_for_each(parent->pml4, duplicate_pte, parent))
 		goto error;
 #endif
-	if (parent->next_fd >= 128)
+	if (parent->next_fd >= FDCOUNT_LIMIT)
 		goto error;
 
 	current->fdt[0] = parent->fdt[0];
 	current->fdt[1] = parent->fdt[1];
 
-	for (int i = 2; i < 128; i++)
+	for (int i = 2; i < FDCOUNT_LIMIT; i++)
 	{
 		struct file *f = parent->fdt[i];
 		if (f == NULL)
@@ -310,12 +329,11 @@ int process_exec(void *f_name)
 int process_wait(tid_t child_tid UNUSED)
 {
 	struct thread *child = get_child_process(child_tid);
-	struct thread *curr = thread_current();
-	if (child = NULL)
+	if (child == NULL)
 	{
 		return -1;
 	}
-	sema_down(&curr->wait_sema);
+	sema_down(&child->wait_sema);
 	// thread_exit();
 	int exit_status = child->exit_status;
 	list_remove(&child->child_elem);
@@ -327,23 +345,23 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
 	struct thread *curr = thread_current();
-	for (int i = 0; i < 128; i++)
+	for (int i = 0; i < FDCOUNT_LIMIT; i++)
 	{
 		close(i);
 	}
-	palloc_free_multiple(curr->fdt, 3);
+	palloc_free_multiple(curr->fdt, FDT_PAGES);
 	/* 🤔 */
 	file_close(curr->running);
+
 	sema_up(&curr->wait_sema);
 	sema_down(&curr->free_sema);
+
 	process_cleanup();
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
-	process_cleanup();
 }
 
 /* Free the current process's resources. */
@@ -626,7 +644,7 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 	while (_if->rsp % 8 != 0)
 	{
 		_if->rsp--;
-		*(uint8_t *)(_if->rsp) = 0;
+		memset(_if->rsp, 0, sizeof(uint8_t));
 	}
 
 	for (int i = count; i >= 0; i--)
@@ -649,7 +667,6 @@ void argument_stack(char **parse, int count, struct intr_frame *_if)
 	_if->R.rsi = _if->rsp + 8;
 }
 
-/* 완전 맞음 ㅎ... */
 struct thread *get_child_process(int pid)
 {
 	struct thread *curr = thread_current();
@@ -668,54 +685,12 @@ struct thread *get_child_process(int pid)
 	}
 	return NULL;
 }
-/* 준코 */
-void remove_child_process(struct thread *cp)
-{
-	list_remove(&cp->child_elem);
-	free(cp);
-}
 
-/* 준코 project2  */
-/* 🤔 */
-int process_add_file(struct file *f)
-{
-	struct thread *curr = thread_current();
-	int findIdx = curr->next_fd; /* 탐색 포인터 */
-	ASSERT(f != NULL);
-
-	while (findIdx < 128 && curr->fdt[findIdx] != NULL)
-	{
-		findIdx++;
-	}
-	if (findIdx >= 128)
-	{
-		return -1;
-	}
-	curr->next_fd = findIdx;
-	curr->fdt[findIdx] = f;
-
-	return findIdx;
-}
-
-struct file *process_get_file(int fd)
-{
-	struct thread *curr = thread_current();
-	if (fd < 0 || fd >= 128)
-	{
-		return NULL;
-	}
-	return curr->fdt[fd];
-}
-
-void process_close_file(int fd)
-{
-	struct thread *curr = thread_current();
-	if (fd < 0 || fd >= 128)
-		return;
-
-	curr->fdt[fd] = NULL;
-}
-
+// void remove_child_process(struct thread *cp)
+// {
+// 	list_remove(&cp->child_elem);
+// 	free(cp);
+// }
 /*----------------week09 추가 함수 끝--------------------*/
 
 #ifndef VM
