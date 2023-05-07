@@ -108,6 +108,25 @@ tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
 		return TID_ERROR;
 
 	return tid;
+	struct thread *curr = thread_current();
+	memcpy(&curr->parent_if, if_, sizeof(struct intr_frame));
+
+	tid_t tid = thread_create(name, PRI_DEFAULT, __do_fork, curr);
+	/*return thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());*/
+
+	if (tid == TID_ERROR)
+	{
+		return TID_ERROR;
+	}
+
+	struct thread *child = get_child_process(tid);
+
+	sema_down(&child->fork_sema);
+
+	if (child->exit_status == -1)
+		return TID_ERROR;
+
+	return tid;
 }
 
 #ifndef VM
@@ -336,7 +355,7 @@ void process_exit(void)
 
 	sema_up(&curr->wait_sema);
 	sema_down(&curr->free_sema);
-	
+
 	process_cleanup();
 
 	/* TODO: Your code goes here.

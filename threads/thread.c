@@ -1,3 +1,4 @@
+#define USERPROG
 #include "threads/thread.h"
 #include <debug.h>
 #include <stddef.h>
@@ -179,9 +180,12 @@ tid_t thread_create(const char *name, int priority,
 
 	thread_unblock(t); // t를 ready list에 추가함.
 
-	test_max_priority(); // 준코 여기 비교, yield 다있으니까
+	// test_max_priority(); // 준코 여기 비교, yield 다있으니까
 						 // 여기는 5월 2일 준코 반갑다!
-
+	if (priority_less(&t->elem, &curr->elem, 0))
+	{
+		thread_yield();
+	}
 	return tid;
 }
 
@@ -244,9 +248,9 @@ void thread_exit(void)
 
 	intr_disable();
 
-	list_remove(&thread_current()->elem);
-	list_remove(&thread_current()->child_elem);
-	list_remove(&thread_current()->donation_elem);
+	// list_remove(&thread_current()->elem);
+	// list_remove(&thread_current()->child_elem);
+	// list_remove(&thread_current()->donation_elem);
 
 	do_schedule(THREAD_DYING);
 	NOT_REACHED();
@@ -587,19 +591,11 @@ void test_max_priority(void)
 		return;
 	}
 	int run_priority = thread_current()->priority;
-	struct list_elem *e = list_front(&ready_list);
+	struct list_elem *e = list_begin(&ready_list);
 	struct thread *t = list_entry(e, struct thread, elem);
-	if (run_priority <= t->priority)
+	if (run_priority <= thread_get_priority())
 	{
 		thread_yield();
 	}
 }
 /*-------------------------[project 1]-------------------------*/
-
-/*-------------------------[project 2]-------------------------*/
-
-// struct  thread *get_child_process(int pid)
-// {
-
-// 	thread_current() -> children_list->
-// };

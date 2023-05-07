@@ -194,7 +194,6 @@ void exit(int status)
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
 	printf("%s: exit(%d)\n", thread_name(), status);
-
 	thread_exit(); // 스레드가 죽는다.
 }
 
@@ -347,7 +346,7 @@ int write(int fd, const void *buffer, unsigned size)
 		putbuf(buffer, size);
 		write_count = size;
 	}
-	else if (fileobj == STDIN)
+	else if (fileobj == 1)
 	{
 		return -1;
 	}
@@ -377,6 +376,10 @@ void seek(int fd, unsigned position)
 
 unsigned tell(int fd)
 {
+	if (fd < 2)
+	{
+		return;
+	}
 	struct file *fileobj = process_get_file(fd);
 	if (fd < 2)
 	{

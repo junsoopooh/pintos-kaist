@@ -1,3 +1,4 @@
+#define USERPROG
 #include "threads/init.h"
 #include <console.h>
 #include <debug.h>

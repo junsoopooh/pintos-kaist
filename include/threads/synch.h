@@ -9,6 +9,7 @@ struct semaphore
 {
 	unsigned value;		 /* Current value. */
 	struct list waiters; /* List of waiting threads. */
+	int priority;
 };
 
 void sema_init(struct semaphore *, unsigned value);
@@ -38,7 +39,7 @@ struct condition
 
 void cond_init(struct condition *);
 void cond_wait(struct condition *, struct lock *);
-void cond_signal(struct condition *, struct lock *);
+void cond_signal(struct condition *cond, struct lock *lock);
 void cond_broadcast(struct condition *, struct lock *);
 
 /* Optimization barrier.
@@ -57,6 +58,6 @@ void cond_broadcast(struct condition *, struct lock *);
 void donate_priority(void);
 void remove_with_lock(struct lock *lock);
 void refresh_priority(void);
-// bool sem_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
-// bool donate_priority_less(struct list_elem *a, struct list_elem *b, void *aux UNUSED);
+bool sem_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool donate_priority_less(struct list_elem *a, struct list_elem *b, void *aux);
 /*-------------------------[project 1]-------------------------*/
