@@ -333,22 +333,18 @@ int write(int fd, const void *buffer, unsigned size)
 	int write_count;
 
 	struct file *fileobj = process_get_file(fd);
-
-	if (fd == 0)
-	{
-		return 0;
-	}
-
+	
 	if (fileobj == NULL)
 	{
 		return -1;
 	}
+
 	if (fileobj == STDOUT)
 	{
 		putbuf(buffer, size);
 		write_count = size;
 	}
-	else if (fileobj == 1)
+	else if (fileobj == STDIN)
 	{
 		return -1;
 	}

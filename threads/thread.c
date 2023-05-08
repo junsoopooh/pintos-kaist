@@ -590,7 +590,7 @@ void test_max_priority(void)
 	int run_priority = thread_current()->priority;
 	struct list_elem *e = list_begin(&ready_list);
 	struct thread *t = list_entry(e, struct thread, elem);
-	if (run_priority <= thread_get_priority())
+	if (t->priority > thread_get_priority())
 	{
 		thread_yield();
 	}
