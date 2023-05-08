@@ -587,11 +587,10 @@ void test_max_priority(void)
 	{
 		return;
 	}
+	int run_priority = thread_current()->priority;
 	struct list_elem *e = list_begin(&ready_list);
-	struct thread *curr = list_entry(e, struct thread, elem);
-
-	// 새로 들어온 프로세스 우선순위가, 지금 돌고있는 프로세스 우선순위 보다 높다면
-	if (curr->priority > thread_get_priority())
+	struct thread *t = list_entry(e, struct thread, elem);
+	if (t->priority > thread_get_priority())
 	{
 		thread_yield();
 	}
