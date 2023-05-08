@@ -26,12 +26,11 @@ static void process_cleanup(void);
 static bool load(const char *file_name, struct intr_frame *if_);
 static void initd(void *f_name);
 static void __do_fork(void *);
+
+/*-------------------------[project 2]-------------------------*/
 void argument_stack(char **parse, int count, struct intr_frame *_if);
 struct thread *get_child_process(int pid);
-
-/* project2 */
-
-/* project2 */
+/*-------------------------[project 2]-------------------------*/
 
 /* General process initializer for initd and other process. */
 static void process_init(void)
@@ -45,7 +44,8 @@ static void process_init(void)
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
 
-// ppt 상의 process_execute()함수
+/*  ppt 상의 process_execute()함수
+   새로운 initd 스레드를 생성하고, 생성한 스레드의 ID를 반환하는 함수 */
 tid_t process_create_initd(const char *file_name)
 {
     char *fn_copy;
@@ -69,8 +69,7 @@ tid_t process_create_initd(const char *file_name)
 }
 
 /* A thread function that launches first user process. */
-static void
-initd(void *f_name)
+static void initd(void *f_name)
 {
 #ifdef VM
     supplemental_page_table_init(&thread_current()->spt);
@@ -111,8 +110,7 @@ tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
 #ifndef VM
 /* Duplicate the parent's address space by passing this function to the
  * pml4_for_each. This is only for the project 2. */
-static bool
-duplicate_pte(uint64_t *pte, void *va, void *aux)
+static bool duplicate_pte(uint64_t *pte, void *va, void *aux)
 {
     struct thread *current = thread_current();
     struct thread *parent = (struct thread *)aux;
@@ -120,12 +118,11 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
     void *newpage;
     bool writable;
 
-    /* 1. TODO: If the parent_page is kernel page, then return immediately. */
     if (is_kernel_vaddr(va))
     {
         return true;
     }
-    /* 2. Resolve VA from the parent's page map level 4. */
+    /* Resolve VA from the parent's page map level 4. */
     parent_page = pml4_get_page(parent->pml4, va);
 
     if (parent_page == NULL)
@@ -133,25 +130,19 @@ duplicate_pte(uint64_t *pte, void *va, void *aux)
         return false;
     }
 
-    /* 3. TODO: Allocate new PAL_USER page for the child and set result to
-     *    TODO: NEWPAGE. */
     newpage = palloc_get_page(PAL_USER | PAL_ZERO);
     if (newpage == NULL)
     {
         return false;
     } /* set result to NEWPAGE*/
 
-    /* 4. TODO: Duplicate parent's page to the new page and
-     *    TODO: check whether parent's page is writable or not (set WRITABLE
-     *    TODO: according to the result). */
     // if (is_writable(pte)) {
     memcpy(newpage, parent_page, PGSIZE);
     writable = is_writable(pte);
-    /* 5. Add new page to child's page table at address VA with WRITABLE
+    /* Add new page to child's page table at address VA with WRITABLE
      *    permission. */
     if (!pml4_set_page(current->pml4, va, newpage, writable))
     {
-        /* 6. TODO: if fail to insert page, do error handling. */
         printf("FAIL to insert page!\n");
         return false;
     }
@@ -168,37 +159,33 @@ static void __do_fork(void *aux)
     struct intr_frame if_;
     struct thread *parent = (struct thread *)aux;
     struct thread *current = thread_current();
+    struct intr_frame *parent_if = &parent->parent_if;  /* project2 수정*/
 
-    struct intr_frame *parent_if = &parent->parent_if;
     bool succ = true;
 
-    /* 1. Read the cpu context to local stack. */
     memcpy(&if_, parent_if, sizeof(struct intr_frame));
-    // memcpy(&if_.R.rbx, &parent_if->R.rbx, sizeof(uint64_t));
-    // // memcpy(&if_.R.rsp, &parent_if->R.rsp, sizeof(uint64_t));
-    // memcpy(&if_.R.rbp, &parent_if->R.rbp, sizeof(uint64_t));
-    // memcpy(&if_.R.r12, &parent_if->R.r12, sizeof(uint64_t));
-    // memcpy(&if_.R.r13, &parent_if->R.r13, sizeof(uint64_t));
-    // memcpy(&if_.R.r14, &parent_if->R.r14, sizeof(uint64_t));
-    if_.R.rax = 0;
 
-    /* 2. Duplicate PT */
+    if_.R.rax = 0; /* project2 추가*/
+
+    /*  Duplicate PT */
     current->pml4 = pml4_create();
     if (current->pml4 == NULL)
         goto error;
 
     process_activate(current);
-#ifdef VM
-    supplemental_page_table_init(&current->spt);
-    if (!supplemental_page_table_copy(&current->spt, &parent->spt))
-        goto error;
-#else
-    if (!pml4_for_each(parent->pml4, duplicate_pte, parent))
-        goto error;
-#endif
-    if (parent->next_fd >= FDCOUNT_LIMIT)
-        goto error;
 
+    #ifdef VM
+        supplemental_page_table_init(&current->spt);
+        if (!supplemental_page_table_copy(&current->spt, &parent->spt))
+            goto error;
+    #else
+        if (!pml4_for_each(parent->pml4, duplicate_pte, parent))
+            goto error;
+    #endif
+        if (parent->next_fd >= FDCOUNT_LIMIT)
+            goto error;
+
+    /*-------------------------[project 2]-------------------------*/
     current->fdt[0] = parent->fdt[0];
     current->fdt[1] = parent->fdt[1];
 
@@ -214,14 +201,12 @@ static void __do_fork(void *aux)
 
     current->next_fd = parent->next_fd;
     sema_up(&current->fork_sema);
-    // if_.R.rax = 0;
-    // process_init();
+    /*-------------------------[project 2]-------------------------*/
 
     /* Finally, switch to the newly created process. */
     if (succ)
         do_iret(&if_);
 error:
-    // thread_exit();
     current->exit_status = TID_ERROR;
     sema_up(&current->fork_sema);
     exit(TID_ERROR);
@@ -245,7 +230,7 @@ int process_exec(void *f_name)
     _if.eflags = FLAG_IF | FLAG_MBS;
 
     /* We first kill the current context */
-
+    /*-------------------------[project 2]-------------------------*/
     char *token, *save_ptr;
     char *values[128];
     int i = 0;
@@ -259,6 +244,7 @@ int process_exec(void *f_name)
         i++;
         values[i] = token;
     }
+    /*-------------------------[project 2]-------------------------*/
 
     process_cleanup();
 
@@ -275,6 +261,7 @@ int process_exec(void *f_name)
     /* out */
 
     /* If load failed, quit. */
+    /*-------------------------[project 2]-------------------------*/
     if (!success)
     {
         palloc_free_page(file_name);
@@ -282,6 +269,8 @@ int process_exec(void *f_name)
     }
 
     argument_stack(values, i, &_if);
+    /*-------------------------[project 2]-------------------------*/
+
     // hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
     // palloc_free_page(file_name);
@@ -301,7 +290,9 @@ int process_exec(void *f_name)
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
 
-/* project2 system call */
+/*-------------------------[project 2]-------------------------*/
+/* 지정한 child_tid의 자식 프로세스가 종료되길 기다리고,
+종료 시 자식 프로세스의 exit_status를 반환하는 함수 */
 int process_wait(tid_t child_tid UNUSED)
 {
     struct thread *child = get_child_process(child_tid);
@@ -317,35 +308,28 @@ int process_wait(tid_t child_tid UNUSED)
     return exit_status;
 }
 
-/* Exit the process. This function is called by thread_exit (). */
+/* 프로세스를 종료하는 함수 */
 void process_exit(void)
 {
     struct thread *curr = thread_current();
+
     for (int i = 0; i < FDCOUNT_LIMIT; i++)
     {
         close(i);
     }
     palloc_free_multiple(curr->fdt, FDT_PAGES);
-    /* 🤔 */
     file_close(curr->running);
 
     sema_up(&curr->wait_sema);
     sema_down(&curr->free_sema);
 
     process_cleanup();
-
-    /* TODO: Your code goes here.
-     * TODO: Implement process termination message (see
-     * TODO: project2/process_termination.html).
-     * TODO: We recommend you to implement process resource cleanup here. */
 }
 
-/* Free the current process's resources. */
-static void
-process_cleanup(void)
+/* 현재 프로세스의 자원을 해제하는 함수 */
+static void process_cleanup(void)
 {
     struct thread *curr = thread_current();
-
 #ifdef VM
     supplemental_page_table_kill(&curr->spt);
 #endif

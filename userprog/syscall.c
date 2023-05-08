@@ -8,7 +8,6 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 /*-------------------------[project 2]-------------------------*/
-// #include "include/lib/user/syscall.h"
 #include "filesys/filesys.h"
 #include "userprog/process.h"
 #include "devices/input.h"
@@ -86,7 +85,7 @@ void syscall_handler(struct intr_frame *f)
 	case SYS_FORK:
 		f->R.rax = fork(f->R.rdi, f);
 		break;
-	case SYS_EXEC: // Switch current process.
+	case SYS_EXEC:
 		if (exec(f->R.rdi) == -1)
 		{
 			exit(-1);
@@ -159,11 +158,9 @@ void syscall_handler(struct intr_frame *f)
 		exit(-1);
 		break;
 	}
-
-	// printf("system call!\n");
-	// thread_exit();
 }
 
+/* 입력된 주소가 유효한 주소인지 확인하고, 그렇지 않으면 프로세스를 종료시키는 함수 */
 void check_address(const void *addr)
 {
 	struct thread *curr = thread_current();
@@ -179,26 +176,28 @@ void check_address(const void *addr)
 // 	rsp = (int64_t *)rsp + 2; // 원래 stack pointer에서 2칸(16byte) 올라감 : |argc|"argv"|...
 // 	for (int i = 0; i < count; i++)
 // 	{
-// 		check_address(rsp); // 진교 추가
+// 		check_address(rsp);
 // 		arg[i] = rsp;
 // 		rsp = (int64_t *)rsp + 1;
 // 	}
 // }
 
-/* pintos 종료시키는 함수 */
+/* pintos를 shutdown하는 시스템콜 함수  */
 void halt(void)
 {
 	power_off();
 }
 
+/* process를 종료하는 시스템콜 함수 */
 void exit(int status)
-{ // 종료 status를 입력받는다. exit(0)이면 성공, 아님 실패
+{
 	struct thread *cur = thread_current();
 	cur->exit_status = status;
 	printf("%s: exit(%d)\n", thread_name(), status);
-	thread_exit(); // 스레드가 죽는다.
+	thread_exit(); 
 }
 
+/* 'function함수를 수행하는 스레드'를 생성하는 시스템콜 함수 */
 bool create(const char *file, unsigned initial_size)
 {
 	check_address(file);
@@ -212,6 +211,7 @@ bool create(const char *file, unsigned initial_size)
 	}
 }
 
+/* 주어진 파일을 삭제하는 시스템콜 함수 */
 bool remove(const char *file)
 {
 	check_address(file);
@@ -223,6 +223,7 @@ bool remove(const char *file)
 	return false;
 }
 
+/* 입력된  fd가 가르키는 파일의 크기를 반환하는 시스템콜 함수 */
 int filesize(int fd)
 {
 	struct file *fileobj = process_get_file(fd);
@@ -233,27 +234,26 @@ int filesize(int fd)
 	return file_length(fileobj);
 }
 
+/* 자식프로세스를 생성하고 프로그램을 실행시키는 시스템콜 함수 */
 int exec(const char *cmd_line)
 {
 	check_address(cmd_line);
 
-	/* 인자로 받은 파일 이름 문자열을 복사하여 이 복사본을 인자로 process_exec() 실행*/
 	int size = strlen(cmd_line) + 1;
 	char *fn_copy = palloc_get_page(PAL_ZERO);
 	if (fn_copy == NULL)
 		exit(-1);
 	strlcpy(fn_copy, cmd_line, size);
 
-	if (process_exec(fn_copy) == -1) /* process_exec에서 free해줌 */
+	if (process_exec(fn_copy) == -1)
 		return -1;
 
-	/* Caller 프로세스는 do_iret() 후 돌아오지 못한다. */
 	NOT_REACHED();
 
-	return 0; // 이 값은 리턴되지 않는다. 즉, exec()은 오직 에러가 발생했을 때만 리턴한다.
+	return 0;
 }
 
-/* 🤔 */
+/* 인자로 받은 file을 열어, 해당 파일을 가리키는 포인터를 현재 쓰레드의 fdt에 추가하는 시스템콜 함수 */
 int open(const char *file)
 {
 	check_address(file);
@@ -264,10 +264,7 @@ int open(const char *file)
 	{
 		return -1;
 	}
-	int fd = process_add_file(fileobj); // 해당 파일을 가리키는 포인터를 fdt에 넣어주고 식별자 리턴
-
-	// struct thread *curr = thread_current();
-	// curr->fdt[curr->next_fd] = file;
+	int fd = process_add_file(fileobj);
 
 	if (fd == -1)
 	{
@@ -278,14 +275,14 @@ int open(const char *file)
 	return fd;
 }
 
+/* 열린파일의 데이터를 읽는 시스템콜 함수*/
 int read(int fd, void *buffer, unsigned size)
 {
-	// 유효한 주소인지부터 체크
-	check_address(buffer);			  // 버퍼 시작 주소 체크
-	check_address(buffer + size - 1); // 버퍼 끝 주소도 유저 영역 내에 있는지 체크
+	check_address(buffer);	
+	check_address(buffer + size - 1); 
+
 	unsigned char *buf = buffer;
 	int read_count;
-
 	struct file *fileobj = process_get_file(fd);
 
 	if (fileobj == NULL)
@@ -298,7 +295,6 @@ int read(int fd, void *buffer, unsigned size)
 		return 0;
 	}
 
-	/* STDIN일 때: */
 	if (fileobj == STDIN)
 	{
 		char key;
@@ -307,31 +303,30 @@ int read(int fd, void *buffer, unsigned size)
 			key = input_getc();
 			*buf++ = key;
 			if (key == '\0')
-			{ // 엔터값
+			{ 
 				break;
 			}
 		}
 	}
-	/* STDOUT일 때: -1 반환 */
 	else if (fileobj == STDOUT)
 	{
 		return -1;
 	}
-
 	else
 	{
 		lock_acquire(&filesys_lock);
-		read_count = file_read(fileobj, buffer, size); // 파일 읽어들일 동안만 lock 걸어준다.
+		read_count = file_read(fileobj, buffer, size);
 		lock_release(&filesys_lock);
 	}
 	return read_count;
 }
 
+/* 열린파일의 데이터를 기록하는 시스템콜 함수 */
 int write(int fd, const void *buffer, unsigned size)
 {
 	check_address(buffer);
-	int write_count;
 
+	int write_count;
 	struct file *fileobj = process_get_file(fd);
 	
 	if (fileobj == NULL)
@@ -350,14 +345,14 @@ int write(int fd, const void *buffer, unsigned size)
 	}
 	else
 	{
-
 		lock_acquire(&filesys_lock);
 		write_count = file_write(fileobj, buffer, size);
 		lock_release(&filesys_lock);
 	}
-	return write_count; // 출력한 데이터의 byte를 반환한다.
+	return write_count;
 }
 
+/* 열린 파일의 위치(offset)를 이동하는 시스템콜 함수*/
 void seek(int fd, unsigned position)
 {
 	struct file *fileobj = process_get_file(fd);
@@ -365,13 +360,11 @@ void seek(int fd, unsigned position)
 	{
 		return;
 	}
-	// check_address(fileobj);
-	// if (fileobj == NULL)
-	// 	return;
 
 	file_seek(fileobj, position);
 }
 
+/* 열린 파일의 위치(offset)를 알려주는 시스템콜 함수*/
 unsigned tell(int fd)
 {
 	if (fd < 2)
@@ -383,13 +376,11 @@ unsigned tell(int fd)
 	{
 		return;
 	}
-	// check_address(fileobj);
-	// if (fileobj == NULL) /* 조건 빠짐 */
-	// 	return -1;
 
 	return file_tell(fileobj);
 }
 
+/* 열린 파일을 닫는 시스템 콜 함수*/
 void close(int fd)
 {
 	if (fd <= 1)
@@ -400,47 +391,42 @@ void close(int fd)
 	{
 		return;
 	}
-
-	// lock_acquire(&filesys_lock);
-	// file_close(fileobj);
-	// lock_release(&filesys_lock);
-
-	// thread_current()->fdt[fd] = NULL;
 	process_close_file(fd);
 }
 
+/* 자식스레드를 복제하는 함수 */
 tid_t fork(const char *thread_name, struct intr_frame *f)
 {
-	// check_address(thread_name);
 	return process_fork(thread_name, f);
 }
 
+/* 지정된 pid를 가진 자식 프로세스가 종료될 때까지 대기하는 시스템콜 함수 */
 int wait(tid_t pid)
 {
 	return process_wait(pid);
 }
 
-/* 준코 project2  */
-/* 🤔 */
+/*  현재 스레드의 fdt에 주어진 파일을 추가하고, 추가된 파일의 식별자를 반환하는 함수*/
 int process_add_file(struct file *f)
 {
 	struct thread *curr = thread_current();
 	struct file **fdt = curr->fdt;
 
-	// Find open spot from the front
 	while (curr->next_fd < FDCOUNT_LIMIT && fdt[curr->next_fd])
 	{
 		curr->next_fd++;
 	}
 
-	// error - fd table full
 	if (curr->next_fd >= FDCOUNT_LIMIT)
-		return -1;
+		{
+			return -1;
+		}
 
 	fdt[curr->next_fd] = f;
 	return curr->next_fd;
 }
 
+/* 주어진 파일 식별자에 해당하는 파일 포인터를 반환하는 함수*/
 struct file *process_get_file(int fd)
 {
 	if (fd < 0 || fd >= FDCOUNT_LIMIT || fd == NULL)
@@ -451,6 +437,7 @@ struct file *process_get_file(int fd)
 	return curr->fdt[fd];
 }
 
+/* 현재 실행중인 스레드의 fdt에서 fd 인덱스의 값을 NULL로 초기화하여 파일을 닫는 함수 */
 void process_close_file(int fd)
 {
 	struct thread *curr = thread_current();
