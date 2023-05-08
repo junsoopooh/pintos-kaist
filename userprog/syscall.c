@@ -35,6 +35,8 @@ unsigned tell(int fd);
 
 struct file *process_get_file(int fd);
 void process_close_file(int fd);
+int process_add_file(struct file *f);
+struct file *process_get_file(int fd);
 /*-------------------------[project 2]-------------------------*/
 
 /* System call.
